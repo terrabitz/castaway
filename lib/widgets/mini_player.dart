@@ -42,22 +42,25 @@ class MiniPlayer extends StatelessWidget {
               },
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                child: Row(
+                child: Stack(
                   children: [
-                    // Episode/Podcast image
-                    Column(
-                      children: [
-                        ClipRRect(
+                    // Episode/Podcast image positioned on the left
+                    Positioned(
+                      left: 10,
+                      top: 0,
+                      bottom: 0,
+                      child: Center(
+                        child: ClipRRect(
                           borderRadius: BorderRadius.circular(4),
                           child: episode.imageUrl != null
                             ? CachedNetworkImage(
                                 imageUrl: episode.imageUrl!,
-                                width: 80,
-                                height: 80,
+                                width: 60,
+                                height: 60,
                                 fit: BoxFit.cover,
                                 placeholder: (context, url) => Container(
-                                  width: 80,
-                                  height: 80,
+                                  width: 60,
+                                  height: 60,
                                   color: Colors.grey.shade300,
                                   child: Icon(Icons.music_note, color: Colors.grey),
                                 ),
@@ -65,12 +68,12 @@ class MiniPlayer extends StatelessWidget {
                               )
                             : _fallbackImage(podcast),
                         ),
-                      ],
+                      ),
                     ),
-                    // Player controls
-                    Expanded(
+                    // Player controls centered in the full width
+                    Center(
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                         // Skip backward 10s
                         IconButton(
@@ -109,7 +112,7 @@ class MiniPlayer extends StatelessWidget {
                           padding: EdgeInsets.all(8),
                           constraints: BoxConstraints(minWidth: 48, minHeight: 48),
                         ),
-                    
+
                         // Skip forward 30s
                         IconButton(
                           onPressed: playerService.isLoading ? null : () => playerService.skipForward(),
