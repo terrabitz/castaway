@@ -88,6 +88,12 @@ class AudioPlayerService extends ChangeNotifier {
 
       await _player.setUrl(episode.audioUrl);
       await _player.play();
+    } on PlayerInterruptedException catch (e) {
+      // This call was interrupted since another audio source was loaded or the
+      // player was stopped or disposed before this audio source could complete
+      // loading.
+      // See https://pub.dev/packages/just_audio#working-with-errors
+      print("Connection aborted: ${e.message}");
     } catch (e) {
       _playerState = PlayerState.stopped;
       notifyListeners();
