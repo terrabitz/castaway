@@ -1,8 +1,11 @@
 import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart';
 import '../models/podcast.dart';
+import '../database/database_helper.dart';
 
 class PodcastService {
+  static final DatabaseHelper _dbHelper = DatabaseHelper();
+
   static Future<Podcast> fetchPodcast(String rssUrl) async {
     try {
       final response = await http.get(Uri.parse(rssUrl));
@@ -30,17 +33,50 @@ class PodcastService {
         }
       }
 
-      return Podcast(
+      final podcast = Podcast(
         title: title,
         description: description,
         rssUrl: rssUrl,
         imageUrl: imageUrl,
         author: author,
         episodes: episodes,
+        lastFetched: DateTime.now(),
       );
+
+      // Update database if this is an existing subscription
+      final existing = await _dbHelper.getPodcastByRssUrl(rssUrl);
+      if (existing != null) {
+        final updatedPodcast = podcast.copyWith(id: existing.id);
+        await _dbHelper.updatePodcast(updatedPodcast);
+        return updatedPodcast;
+      }
+
+      return podcast;
     } catch (e) {
       throw Exception('Error parsing RSS feed: $e');
     }
+  }
+
+  static Future<Podcast> addPodcastSubscription(String rssUrl) async {
+    final podcast = await fetchPodcast(rssUrl);
+    final id = await _dbHelper.insertPodcast(podcast);
+    return podcast.copyWith(id: id);
+  }
+
+  static Future<List<Podcast>> getAllSubscriptions() async {
+    return await _dbHelper.getAllPodcasts();
+  }
+
+  static Future<void> removePodcastSubscription(Podcast podcast) async {
+    if (podcast.id != null) {
+      await _dbHelper.deletePodcast(podcast.id!);
+    } else {
+      await _dbHelper.deletePodcastByRssUrl(podcast.rssUrl);
+    }
+  }
+
+  static Future<Podcast> refreshPodcast(Podcast podcast) async {
+    return await fetchPodcast(podcast.rssUrl);
   }
 
   static Episode? _parseEpisode(XmlElement item, String? fallbackImageUrl) {

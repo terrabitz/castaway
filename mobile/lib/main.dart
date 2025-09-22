@@ -31,10 +31,31 @@ class PodcastAppState extends ChangeNotifier {
   final List<Podcast> _subscriptions = [];
   bool _isLoading = false;
   String? _error;
+  bool _initialized = false;
 
   List<Podcast> get subscriptions => _subscriptions;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  bool get initialized => _initialized;
+
+  Future<void> initialize() async {
+    if (_initialized) return;
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final savedSubscriptions = await PodcastService.getAllSubscriptions();
+      _subscriptions.clear();
+      _subscriptions.addAll(savedSubscriptions);
+      _initialized = true;
+    } catch (e) {
+      _error = 'Failed to load subscriptions: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 
   Future<void> addSubscription(String rssUrl) async {
     if (_subscriptions.any((podcast) => podcast.rssUrl == rssUrl)) {
@@ -48,7 +69,7 @@ class PodcastAppState extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final podcast = await PodcastService.fetchPodcast(rssUrl);
+      final podcast = await PodcastService.addPodcastSubscription(rssUrl);
       _subscriptions.add(podcast);
       _error = null;
     } catch (e) {
@@ -59,9 +80,29 @@ class PodcastAppState extends ChangeNotifier {
     }
   }
 
-  void removeSubscription(Podcast podcast) {
-    _subscriptions.remove(podcast);
-    notifyListeners();
+  Future<void> removeSubscription(Podcast podcast) async {
+    try {
+      await PodcastService.removePodcastSubscription(podcast);
+      _subscriptions.remove(podcast);
+      notifyListeners();
+    } catch (e) {
+      _error = 'Failed to remove subscription: $e';
+      notifyListeners();
+    }
+  }
+
+  Future<void> refreshPodcast(Podcast podcast) async {
+    try {
+      final refreshed = await PodcastService.refreshPodcast(podcast);
+      final index = _subscriptions.indexWhere((p) => p.id == podcast.id);
+      if (index != -1) {
+        _subscriptions[index] = refreshed;
+        notifyListeners();
+      }
+    } catch (e) {
+      _error = 'Failed to refresh podcast: $e';
+      notifyListeners();
+    }
   }
 
   void clearError() {
@@ -70,16 +111,42 @@ class PodcastAppState extends ChangeNotifier {
   }
 }
 
-class MyHomePage extends StatelessWidget {
+class MyHomePage extends StatefulWidget {
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<PodcastAppState>(context, listen: false).initialize();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Castaway'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: () async {
+              final appState = Provider.of<PodcastAppState>(context, listen: false);
+              await appState.initialize();
+            },
+          ),
+        ],
       ),
       body: Consumer<PodcastAppState>(
         builder: (context, appState, child) {
+          if (!appState.initialized && appState.isLoading) {
+            return Center(child: CircularProgressIndicator());
+          }
+
           if (appState.subscriptions.isEmpty) {
             return Center(
               child: Column(
@@ -147,9 +214,18 @@ class MyHomePage extends StatelessWidget {
                       ),
                       title: Text(podcast.title),
                       subtitle: Text(podcast.author ?? ''),
-                      trailing: IconButton(
-                        icon: Icon(Icons.delete),
-                        onPressed: () => appState.removeSubscription(podcast),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.refresh),
+                            onPressed: () => appState.refreshPodcast(podcast),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.delete),
+                            onPressed: () => appState.removeSubscription(podcast),
+                          ),
+                        ],
                       ),
                       onTap: () {
                         Navigator.push(

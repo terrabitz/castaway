@@ -2,6 +2,7 @@
 	- [x] A mobile app development environment is setup with Flutter
 	- [x] CI/CD is setup for linting, testing, validation
 - [X] RSS Feed management (add, remove)
+- [X] RSS Feed management - persistence
 - [ ] List episodes in each stream
 - [ ] Stream episodes
 - [ ] Playback controls (play/pause, skip forwards/backwards, speed, skip forwards/backwards)
