@@ -23,11 +23,28 @@ class EpisodeDetailScreen extends StatelessWidget {
         title: Text('Episode Details'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
-          IconButton(
-            icon: Icon(Icons.play_arrow),
-            onPressed: () {
-              final audioService = Provider.of<AudioPlayerService>(context, listen: false);
-              audioService.playEpisode(episode, podcast);
+          Consumer<AudioPlayerService>(
+            builder: (context, audioService, child) {
+              final isCurrentEpisode = audioService.currentEpisode == episode;
+              final isLoading = isCurrentEpisode && audioService.isLoading;
+
+              return IconButton(
+                icon: isLoading
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    )
+                  : Icon(Icons.play_arrow),
+                onPressed: isLoading ? null : () {
+                  audioService.playEpisode(episode, podcast);
+                },
+              );
             },
           ),
         ],
@@ -135,19 +152,36 @@ class EpisodeDetailScreen extends StatelessWidget {
             SizedBox(height: 16),
 
             // Play button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  final audioService = Provider.of<AudioPlayerService>(context, listen: false);
-                  audioService.playEpisode(episode, podcast);
-                },
-                icon: Icon(Icons.play_arrow),
-                label: Text('Play Episode'),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                ),
-              ),
+            Consumer<AudioPlayerService>(
+              builder: (context, audioService, child) {
+                final isCurrentEpisode = audioService.currentEpisode == episode;
+                final isLoading = isCurrentEpisode && audioService.isLoading;
+
+                return SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: isLoading ? null : () {
+                      audioService.playEpisode(episode, podcast);
+                    },
+                    icon: isLoading
+                      ? SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Theme.of(context).colorScheme.onPrimary,
+                            ),
+                          ),
+                        )
+                      : Icon(Icons.play_arrow),
+                    label: Text(isLoading ? 'Loading...' : 'Play Episode'),
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                );
+              },
             ),
             SizedBox(height: 24),
 

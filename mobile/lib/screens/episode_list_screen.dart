@@ -206,11 +206,28 @@ class EpisodeTile extends StatelessWidget {
             ],
           ],
         ),
-        trailing: IconButton(
-          icon: Icon(Icons.play_arrow),
-          onPressed: () {
-            final audioService = Provider.of<AudioPlayerService>(context, listen: false);
-            audioService.playEpisode(episode, podcast);
+        trailing: Consumer<AudioPlayerService>(
+          builder: (context, audioService, child) {
+            final isCurrentEpisode = audioService.currentEpisode == episode;
+            final isLoading = isCurrentEpisode && audioService.isLoading;
+
+            return IconButton(
+              icon: isLoading
+                ? SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  )
+                : Icon(Icons.play_arrow),
+              onPressed: isLoading ? null : () {
+                audioService.playEpisode(episode, podcast);
+              },
+            );
           },
         ),
         onTap: () {

@@ -91,7 +91,7 @@ class FullPlayerScreen extends StatelessWidget {
                   children: [
                     Slider(
                       value: playerService.progress.clamp(0.0, 1.0),
-                      onChanged: (value) {
+                      onChanged: playerService.isLoading ? null : (value) {
                         final position = Duration(
                           milliseconds: (value * playerService.duration.inMilliseconds).round(),
                         );
@@ -125,14 +125,14 @@ class FullPlayerScreen extends StatelessWidget {
                   children: [
                     // Previous episode
                     IconButton(
-                      onPressed: () => playerService.previousEpisode(),
+                      onPressed: playerService.isLoading ? null : () => playerService.previousEpisode(),
                       icon: Icon(Icons.skip_previous),
                       iconSize: 40,
                     ),
 
                     // Skip backward 10s
                     IconButton(
-                      onPressed: () => playerService.skipBackward(),
+                      onPressed: playerService.isLoading ? null : () => playerService.skipBackward(),
                       icon: Icon(Icons.replay_10),
                       iconSize: 40,
                     ),
@@ -144,21 +144,30 @@ class FullPlayerScreen extends StatelessWidget {
                         color: Theme.of(context).colorScheme.primary,
                       ),
                       child: IconButton(
-                        onPressed: () {
+                        onPressed: playerService.isLoading ? null : () {
                           if (playerService.isPlaying) {
                             playerService.pause();
                           } else {
                             playerService.play();
                           }
                         },
-                        icon: Icon(
-                          playerService.isPlaying
-                            ? Icons.pause
-                            : playerService.isLoading
-                              ? Icons.hourglass_empty
-                              : Icons.play_arrow,
-                          color: Theme.of(context).colorScheme.onPrimary,
-                        ),
+                        icon: playerService.isLoading || playerService.playerState == PlayerState.buffering
+                          ? SizedBox(
+                              width: 48,
+                              height: 48,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 4,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Theme.of(context).colorScheme.onPrimary,
+                                ),
+                              ),
+                            )
+                          : Icon(
+                              playerService.isPlaying
+                                ? Icons.pause
+                                : Icons.play_arrow,
+                              color: Theme.of(context).colorScheme.onPrimary,
+                            ),
                         iconSize: 48,
                         padding: EdgeInsets.all(16),
                       ),
@@ -166,14 +175,14 @@ class FullPlayerScreen extends StatelessWidget {
 
                     // Skip forward 30s
                     IconButton(
-                      onPressed: () => playerService.skipForward(),
+                      onPressed: playerService.isLoading ? null : () => playerService.skipForward(),
                       icon: Icon(Icons.forward_30),
                       iconSize: 40,
                     ),
 
                     // Next episode
                     IconButton(
-                      onPressed: () => playerService.nextEpisode(),
+                      onPressed: playerService.isLoading ? null : () => playerService.nextEpisode(),
                       icon: Icon(Icons.skip_next),
                       iconSize: 40,
                     ),

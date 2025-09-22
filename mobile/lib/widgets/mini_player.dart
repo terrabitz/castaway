@@ -98,7 +98,7 @@ class MiniPlayer extends StatelessWidget {
                       children: [
                         // Skip backward 10s
                         IconButton(
-                          onPressed: () => playerService.skipBackward(),
+                          onPressed: playerService.isLoading ? null : () => playerService.skipBackward(),
                           icon: Icon(Icons.replay_10),
                           iconSize: 24,
                           padding: EdgeInsets.all(8),
@@ -107,20 +107,29 @@ class MiniPlayer extends StatelessWidget {
 
                         // Play/Pause
                         IconButton(
-                          onPressed: () {
+                          onPressed: playerService.isLoading ? null : () {
                             if (playerService.isPlaying) {
                               playerService.pause();
                             } else {
                               playerService.play();
                             }
                           },
-                          icon: Icon(
-                            playerService.isPlaying
-                              ? Icons.pause
-                              : playerService.isLoading
-                                ? Icons.hourglass_empty
-                                : Icons.play_arrow,
-                          ),
+                          icon: playerService.isLoading || playerService.playerState == PlayerState.buffering
+                            ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Theme.of(context).colorScheme.primary,
+                                  ),
+                                ),
+                              )
+                            : Icon(
+                                playerService.isPlaying
+                                  ? Icons.pause
+                                  : Icons.play_arrow,
+                              ),
                           iconSize: 32,
                           padding: EdgeInsets.all(8),
                           constraints: BoxConstraints(minWidth: 48, minHeight: 48),
@@ -128,7 +137,7 @@ class MiniPlayer extends StatelessWidget {
 
                         // Skip forward 30s
                         IconButton(
-                          onPressed: () => playerService.skipForward(),
+                          onPressed: playerService.isLoading ? null : () => playerService.skipForward(),
                           icon: Icon(Icons.forward_30),
                           iconSize: 24,
                           padding: EdgeInsets.all(8),
