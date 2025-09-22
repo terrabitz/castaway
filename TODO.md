@@ -1,0 +1,24 @@
+- [x] Mobile App Bootstrap
+	- [x] A mobile app development environment is setup with Flutter
+	- [x] CI/CD is setup for linting, testing, validation
+- [ ] RSS Feed management (add, remove)
+- [ ] List episodes in each stream
+- [ ] Stream episodes
+- [ ] Playback controls (play/pause, skip forwards/backwards, speed, skip forwards/backwards)
+- [ ] Local listen history tracking
+- [ ] OPML import/export
+- [ ] Backend bootstrap
+- [ ] Server auth
+- [ ] Sync subscriptions to/from server
+- [ ] Automatically archive subscriptions server-side
+- [ ] Sync history to/from server
+- [ ] Hide episodes
+- [ ] Episode grouping
+- [ ] Markers API (similar to Sponsorblock)
+- [ ] Server-side transcription
+- [ ] Automatic marking with transcription
+- [ ] Android Auto integration
+- [ ] Listen history import/export
+- [ ] Self-hostable setup (Dockerfile, etc)
+- [ ] Web player
+
