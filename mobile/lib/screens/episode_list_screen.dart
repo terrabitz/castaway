@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/podcast.dart';
+import '../services/audio_player_service.dart';
+import '../widgets/mini_player.dart';
 import 'episode_detail_screen.dart';
 
 class EpisodeListScreen extends StatelessWidget {
@@ -121,6 +124,7 @@ class EpisodeListScreen extends StatelessWidget {
           ),
         ],
       ),
+      bottomNavigationBar: MiniPlayer(),
     );
   }
 }
@@ -205,13 +209,8 @@ class EpisodeTile extends StatelessWidget {
         trailing: IconButton(
           icon: Icon(Icons.play_arrow),
           onPressed: () {
-            // TODO: Implement audio playback
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Audio playback not implemented yet'),
-                duration: Duration(seconds: 2),
-              ),
-            );
+            final audioService = Provider.of<AudioPlayerService>(context, listen: false);
+            audioService.playEpisode(episode, podcast);
           },
         ),
         onTap: () {

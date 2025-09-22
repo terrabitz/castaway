@@ -2,27 +2,47 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'models/podcast.dart';
 import 'services/podcast_service.dart';
+import 'services/audio_player_service.dart';
 import 'screens/episode_list_screen.dart';
+import 'widgets/mini_player.dart';
 
-void main() {
-  runApp(MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final audioPlayerService = AudioPlayerService();
+  await audioPlayerService.initialize();
+  runApp(MyApp(audioPlayerService: audioPlayerService));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final AudioPlayerService audioPlayerService;
+
+  const MyApp({super.key, required this.audioPlayerService});
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => PodcastAppState(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => PodcastAppState()),
+        ChangeNotifierProvider.value(value: audioPlayerService),
+      ],
       child: MaterialApp(
         title: 'Castaway',
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
           useMaterial3: true,
         ),
-        home: MyHomePage(),
+        home: AppWithPlayer(),
       ),
+    );
+  }
+}
+
+class AppWithPlayer extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: MyHomePage(),
+      bottomNavigationBar: MiniPlayer(),
     );
   }
 }
