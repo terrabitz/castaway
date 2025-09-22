@@ -19,7 +19,7 @@ class MiniPlayer extends StatelessWidget {
         final podcast = playerService.currentPodcast!;
 
         return Container(
-          height: 70,
+          height: 100,
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             border: Border(
@@ -45,66 +45,41 @@ class MiniPlayer extends StatelessWidget {
                 child: Row(
                   children: [
                     // Episode/Podcast image
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: episode.imageUrl != null
-                        ? CachedNetworkImage(
-                            imageUrl: episode.imageUrl!,
-                            width: 54,
-                            height: 54,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(
-                              width: 54,
-                              height: 54,
-                              color: Colors.grey.shade300,
-                              child: Icon(Icons.music_note, color: Colors.grey),
-                            ),
-                            errorWidget: (context, url, error) => _fallbackImage(podcast),
-                          )
-                        : _fallbackImage(podcast),
+                    Column(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: episode.imageUrl != null
+                            ? CachedNetworkImage(
+                                imageUrl: episode.imageUrl!,
+                                width: 80,
+                                height: 80,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => Container(
+                                  width: 80,
+                                  height: 80,
+                                  color: Colors.grey.shade300,
+                                  child: Icon(Icons.music_note, color: Colors.grey),
+                                ),
+                                errorWidget: (context, url, error) => _fallbackImage(podcast),
+                              )
+                            : _fallbackImage(podcast),
+                        ),
+                      ],
                     ),
-                    SizedBox(width: 12),
-
-                    // Episode info
+                    // Player controls
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            episode.title,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w500,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          SizedBox(height: 2),
-                          Text(
-                            podcast.title,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey.shade600,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Player controls
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
                         // Skip backward 10s
                         IconButton(
                           onPressed: playerService.isLoading ? null : () => playerService.skipBackward(),
                           icon: Icon(Icons.replay_10),
-                          iconSize: 24,
+                          iconSize: 50,
                           padding: EdgeInsets.all(8),
                           constraints: BoxConstraints(minWidth: 40, minHeight: 40),
                         ),
-
                         // Play/Pause
                         IconButton(
                           onPressed: playerService.isLoading ? null : () {
@@ -130,20 +105,21 @@ class MiniPlayer extends StatelessWidget {
                                   ? Icons.pause
                                   : Icons.play_arrow,
                               ),
-                          iconSize: 32,
+                          iconSize: 50,
                           padding: EdgeInsets.all(8),
                           constraints: BoxConstraints(minWidth: 48, minHeight: 48),
                         ),
-
+                    
                         // Skip forward 30s
                         IconButton(
                           onPressed: playerService.isLoading ? null : () => playerService.skipForward(),
                           icon: Icon(Icons.forward_30),
-                          iconSize: 24,
+                          iconSize: 50,
                           padding: EdgeInsets.all(8),
                           constraints: BoxConstraints(minWidth: 40, minHeight: 40),
                         ),
                       ],
+                      ),
                     ),
                   ],
                 ),
