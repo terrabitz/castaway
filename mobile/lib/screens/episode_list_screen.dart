@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/podcast.dart';
+import 'episode_detail_screen.dart';
 
 class EpisodeListScreen extends StatelessWidget {
   final Podcast podcast;
@@ -111,7 +112,10 @@ class EpisodeListScreen extends StatelessWidget {
                   itemCount: podcast.episodes.length,
                   itemBuilder: (context, index) {
                     final episode = podcast.episodes[index];
-                    return EpisodeTile(episode: episode);
+                    return EpisodeTile(
+                      episode: episode,
+                      podcast: podcast,
+                    );
                   },
                 ),
           ),
@@ -123,10 +127,12 @@ class EpisodeListScreen extends StatelessWidget {
 
 class EpisodeTile extends StatelessWidget {
   final Episode episode;
+  final Podcast podcast;
 
   const EpisodeTile({
     super.key,
     required this.episode,
+    required this.podcast,
   });
 
   @override
@@ -172,41 +178,28 @@ class EpisodeTile extends StatelessWidget {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        subtitle: Row(
           children: [
-            SizedBox(height: 4),
             Text(
-              episode.description,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall,
+              episode.formattedDate,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.grey.shade600,
+              ),
             ),
-            SizedBox(height: 8),
-            Row(
-              children: [
-                Text(
-                  episode.formattedDate,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey.shade600,
-                  ),
+            if (episode.formattedDuration.isNotEmpty) ...[
+              Text(
+                ' • ',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey.shade600,
                 ),
-                if (episode.formattedDuration.isNotEmpty) ...[
-                  Text(
-                    ' • ',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                  Text(
-                    episode.formattedDuration,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ],
-            ),
+              ),
+              Text(
+                episode.formattedDuration,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
           ],
         ),
         trailing: IconButton(
@@ -222,7 +215,15 @@ class EpisodeTile extends StatelessWidget {
           },
         ),
         onTap: () {
-          // TODO: Navigate to episode detail or start playback
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => EpisodeDetailScreen(
+                episode: episode,
+                podcast: podcast,
+              ),
+            ),
+          );
         },
       ),
     );
