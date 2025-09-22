@@ -8,6 +8,7 @@ import 'services/audio_handler.dart';
 import 'screens/episode_list_screen.dart';
 import 'screens/settings_screen.dart';
 import 'widgets/mini_player.dart';
+import 'widgets/podcast_tile.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -259,44 +260,31 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 ),
               Expanded(
-                child: ListView.builder(
-                  itemCount: appState.subscriptions.length,
-                  itemBuilder: (context, index) {
-                    final podcast = appState.subscriptions[index];
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundImage: podcast.imageUrl != null
-                          ? NetworkImage(podcast.imageUrl!)
-                          : null,
-                        child: podcast.imageUrl == null
-                          ? Icon(Icons.mic)
-                          : null,
-                      ),
-                      title: Text(podcast.title),
-                      subtitle: Text(podcast.author ?? ''),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: Icon(Icons.refresh),
-                            onPressed: () => appState.refreshPodcast(podcast),
-                          ),
-                          IconButton(
-                            icon: Icon(Icons.delete),
-                            onPressed: () => appState.removeSubscription(podcast),
-                          ),
-                        ],
-                      ),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => EpisodeListScreen(podcast: podcast),
-                          ),
-                        );
-                      },
-                    );
-                  },
+                child: Padding(
+                  padding: EdgeInsets.all(8),
+                  child: GridView.builder(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 4,
+                      childAspectRatio: 1.0,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                    ),
+                    itemCount: appState.subscriptions.length,
+                    itemBuilder: (context, index) {
+                      final podcast = appState.subscriptions[index];
+                      return PodcastTile(
+                        podcast: podcast,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => EpisodeListScreen(podcast: podcast),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ),
               ),
             ],
