@@ -6,6 +6,7 @@ import 'services/podcast_service.dart';
 import 'services/audio_player_service.dart';
 import 'services/audio_handler.dart';
 import 'screens/episode_list_screen.dart';
+import 'screens/settings_screen.dart';
 import 'widgets/mini_player.dart';
 
 void main() async {
@@ -185,6 +186,17 @@ class _MyHomePageState extends State<MyHomePage> {
             onPressed: () async {
               final appState = Provider.of<PodcastAppState>(context, listen: false);
               await appState.initialize();
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SettingsScreen(),
+                ),
+              );
             },
           ),
         ],
