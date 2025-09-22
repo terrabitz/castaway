@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_html/flutter_html.dart';
 import '../models/podcast.dart';
 import '../services/audio_player_service.dart';
 import '../widgets/mini_player.dart';
+import '../widgets/podcast_image.dart';
 
 class EpisodeDetailScreen extends StatelessWidget {
   final Episode episode;
@@ -58,55 +58,13 @@ class EpisodeDetailScreen extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ClipRRect(
+                PodcastImage(
+                  imageUrl: episode.imageUrl ?? podcast.imageUrl,
+                  width: 100,
+                  height: 100,
+                  fit: BoxFit.cover,
+                  iconSize: 32,
                   borderRadius: BorderRadius.circular(8),
-                  child: episode.imageUrl != null
-                    ? CachedNetworkImage(
-                        imageUrl: episode.imageUrl!,
-                        width: 100,
-                        height: 100,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          width: 100,
-                          height: 100,
-                          color: Colors.grey.shade200,
-                          child: Icon(Icons.play_circle_outline, color: Colors.grey),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          width: 100,
-                          height: 100,
-                          color: Colors.grey.shade200,
-                          child: Icon(Icons.play_circle_outline, color: Colors.grey),
-                        ),
-                      )
-                    : podcast.imageUrl != null
-                      ? CachedNetworkImage(
-                          imageUrl: podcast.imageUrl!,
-                          width: 100,
-                          height: 100,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                            width: 100,
-                            height: 100,
-                            color: Colors.grey.shade200,
-                            child: Icon(Icons.play_circle_outline, color: Colors.grey),
-                          ),
-                          errorWidget: (context, url, error) => Container(
-                            width: 100,
-                            height: 100,
-                            color: Colors.grey.shade200,
-                            child: Icon(Icons.play_circle_outline, color: Colors.grey),
-                          ),
-                        )
-                      : Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade200,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(Icons.play_circle_outline, color: Colors.grey),
-                        ),
                 ),
                 SizedBox(width: 16),
                 Expanded(

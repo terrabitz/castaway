@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../services/audio_player_service.dart';
+import '../widgets/podcast_image.dart';
 
 class FullPlayerScreen extends StatelessWidget {
   const FullPlayerScreen({super.key});
@@ -38,19 +38,11 @@ class FullPlayerScreen extends StatelessWidget {
                   child: Center(
                     child: AspectRatio(
                       aspectRatio: 1,
-                      child: ClipRRect(
+                      child: PodcastImage(
+                        imageUrl: episode.imageUrl ?? podcast.imageUrl,
+                        fit: BoxFit.cover,
+                        iconSize: 80,
                         borderRadius: BorderRadius.circular(12),
-                        child: episode.imageUrl != null
-                          ? CachedNetworkImage(
-                              imageUrl: episode.imageUrl!,
-                              fit: BoxFit.cover,
-                              placeholder: (context, url) => Container(
-                                color: Colors.grey.shade300,
-                                child: Icon(Icons.music_note, size: 80, color: Colors.grey),
-                              ),
-                              errorWidget: (context, url, error) => _fallbackImage(podcast),
-                            )
-                          : _fallbackImage(podcast),
                       ),
                     ),
                   ),
@@ -196,25 +188,5 @@ class FullPlayerScreen extends StatelessWidget {
         },
       ),
     );
-  }
-
-  Widget _fallbackImage(podcast) {
-    return podcast.imageUrl != null
-      ? CachedNetworkImage(
-          imageUrl: podcast.imageUrl!,
-          fit: BoxFit.cover,
-          placeholder: (context, url) => Container(
-            color: Colors.grey.shade300,
-            child: Icon(Icons.music_note, size: 80, color: Colors.grey),
-          ),
-          errorWidget: (context, url, error) => Container(
-            color: Colors.grey.shade300,
-            child: Icon(Icons.music_note, size: 80, color: Colors.grey),
-          ),
-        )
-      : Container(
-          color: Colors.grey.shade300,
-          child: Icon(Icons.music_note, size: 80, color: Colors.grey),
-        );
   }
 }

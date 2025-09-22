@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../services/audio_player_service.dart';
 import '../screens/full_player_screen.dart';
+import 'podcast_image.dart';
 
 class MiniPlayer extends StatelessWidget {
   const MiniPlayer({super.key});
@@ -50,23 +50,13 @@ class MiniPlayer extends StatelessWidget {
                       top: 0,
                       bottom: 0,
                       child: Center(
-                        child: ClipRRect(
+                        child: PodcastImage(
+                          imageUrl: episode.imageUrl ?? podcast.imageUrl,
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          iconSize: 24,
                           borderRadius: BorderRadius.circular(4),
-                          child: episode.imageUrl != null
-                            ? CachedNetworkImage(
-                                imageUrl: episode.imageUrl!,
-                                width: 60,
-                                height: 60,
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => Container(
-                                  width: 60,
-                                  height: 60,
-                                  color: Colors.grey.shade300,
-                                  child: Icon(Icons.music_note, color: Colors.grey),
-                                ),
-                                errorWidget: (context, url, error) => _fallbackImage(podcast),
-                              )
-                            : _fallbackImage(podcast),
                         ),
                       ),
                     ),
@@ -132,33 +122,5 @@ class MiniPlayer extends StatelessWidget {
         );
       },
     );
-  }
-
-  Widget _fallbackImage(podcast) {
-    return podcast.imageUrl != null
-      ? CachedNetworkImage(
-          imageUrl: podcast.imageUrl!,
-          width: 54,
-          height: 54,
-          fit: BoxFit.cover,
-          placeholder: (context, url) => Container(
-            width: 54,
-            height: 54,
-            color: Colors.grey.shade300,
-            child: Icon(Icons.music_note, color: Colors.grey),
-          ),
-          errorWidget: (context, url, error) => Container(
-            width: 54,
-            height: 54,
-            color: Colors.grey.shade300,
-            child: Icon(Icons.music_note, color: Colors.grey),
-          ),
-        )
-      : Container(
-          width: 54,
-          height: 54,
-          color: Colors.grey.shade300,
-          child: Icon(Icons.music_note, color: Colors.grey),
-        );
   }
 }

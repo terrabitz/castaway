@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../models/podcast.dart';
 import '../services/audio_player_service.dart';
 import '../widgets/mini_player.dart';
+import '../widgets/podcast_image.dart';
 import 'episode_detail_screen.dart';
 
 class EpisodeListScreen extends StatelessWidget {
@@ -29,33 +29,13 @@ class EpisodeListScreen extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ClipRRect(
+                PodcastImage(
+                  imageUrl: podcast.imageUrl,
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.cover,
+                  iconSize: 32,
                   borderRadius: BorderRadius.circular(8),
-                  child: podcast.imageUrl != null
-                    ? CachedNetworkImage(
-                        imageUrl: podcast.imageUrl!,
-                        width: 80,
-                        height: 80,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          width: 80,
-                          height: 80,
-                          color: Colors.grey.shade200,
-                          child: Icon(Icons.mic, color: Colors.grey),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          width: 80,
-                          height: 80,
-                          color: Colors.grey.shade200,
-                          child: Icon(Icons.mic, color: Colors.grey),
-                        ),
-                      )
-                    : Container(
-                        width: 80,
-                        height: 80,
-                        color: Colors.grey.shade200,
-                        child: Icon(Icons.mic, color: Colors.grey),
-                      ),
                 ),
                 SizedBox(width: 16),
                 Expanded(
@@ -145,37 +125,14 @@ class EpisodeTile extends StatelessWidget {
       margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: ListTile(
         contentPadding: EdgeInsets.all(16),
-        leading: episode.imageUrl != null
-          ? ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: CachedNetworkImage(
-                imageUrl: episode.imageUrl!,
-                width: 56,
-                height: 56,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Container(
-                  width: 56,
-                  height: 56,
-                  color: Colors.grey.shade200,
-                  child: Icon(Icons.play_circle_outline, color: Colors.grey),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  width: 56,
-                  height: 56,
-                  color: Colors.grey.shade200,
-                  child: Icon(Icons.play_circle_outline, color: Colors.grey),
-                ),
-              ),
-            )
-          : Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(Icons.play_circle_outline, color: Colors.grey),
-            ),
+        leading: PodcastImage(
+          imageUrl: episode.imageUrl,
+          width: 56,
+          height: 56,
+          fit: BoxFit.cover,
+          iconSize: 24,
+          borderRadius: BorderRadius.circular(8),
+        ),
         title: Text(
           episode.title,
           style: Theme.of(context).textTheme.titleMedium,
