@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:audio_session/audio_session.dart';
 import '../models/podcast.dart';
+import 'audio_handler.dart';
 
 enum PlayerState { stopped, playing, paused, loading, buffering }
 
@@ -10,7 +11,10 @@ class AudioPlayerService extends ChangeNotifier {
   factory AudioPlayerService() => _instance;
   AudioPlayerService._internal();
 
+  AudioPlayerHandler? _audioHandler;
+
   final AudioPlayer _player = AudioPlayer();
+  AudioPlayer get player => _player;
   Episode? _currentEpisode;
   Podcast? _currentPodcast;
   PlayerState _playerState = PlayerState.stopped;
@@ -43,6 +47,10 @@ class AudioPlayerService extends ChangeNotifier {
     final minutes = _duration.inMinutes;
     final seconds = _duration.inSeconds.remainder(60);
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  void setAudioHandler(AudioPlayerHandler handler) {
+    _audioHandler = handler;
   }
 
   Future<void> initialize() async {
@@ -85,6 +93,13 @@ class AudioPlayerService extends ChangeNotifier {
       _currentEpisode = episode;
       _currentPodcast = podcast;
       notifyListeners();
+
+      // Update media notification with episode info
+      _audioHandler?.setMediaItem(
+        episode.title,
+        podcast.title,
+        episode.imageUrl ?? podcast.imageUrl,
+      );
 
       await _player.setUrl(episode.audioUrl);
       await _player.play();
