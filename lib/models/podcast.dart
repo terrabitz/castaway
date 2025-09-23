@@ -136,6 +136,9 @@ class Episode {
   }
 
   String get formattedDate {
-    return '${pubDate.day}/${pubDate.month}/${pubDate.year}';
+    final year = pubDate.year.toString();
+    final month = pubDate.month.toString().padLeft(2, '0');
+    final day = pubDate.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
   }
 }

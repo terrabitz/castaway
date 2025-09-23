@@ -121,84 +121,79 @@ class EpisodeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: ListTile(
-        contentPadding: EdgeInsets.all(16),
-        leading: PodcastImage(
-          imageUrl: episode.imageUrl,
-          width: 56,
-          height: 56,
-          fit: BoxFit.cover,
-          iconSize: 24,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        title: Text(
-          episode.title,
-          style: Theme.of(context).textTheme.titleMedium,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Row(
-          children: [
-            Text(
-              episode.formattedDate,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey.shade600,
-              ),
-            ),
-            if (episode.formattedDuration.isNotEmpty) ...[
+    return ListTile(
+      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
               Text(
-                ' • ',
+                episode.formattedDate,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Colors.grey.shade600,
                 ),
               ),
-              Text(
-                episode.formattedDuration,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey.shade600,
+              if (episode.formattedDuration.isNotEmpty) ...[
+                Text(
+                  ' • ',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey.shade600,
+                  ),
                 ),
-              ),
+                Text(
+                  episode.formattedDuration,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
             ],
-          ],
-        ),
-        trailing: Consumer<AudioPlayerService>(
-          builder: (context, audioService, child) {
-            final isCurrentEpisode = audioService.currentEpisode == episode;
-            final isLoading = isCurrentEpisode && audioService.isLoading;
+          ),
+          SizedBox(height: 4),
+          Text(
+            episode.title,
+            style: Theme.of(context).textTheme.bodyLarge,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+      trailing: Consumer<AudioPlayerService>(
+        builder: (context, audioService, child) {
+          final isCurrentEpisode = audioService.currentEpisode == episode;
+          final isLoading = isCurrentEpisode && audioService.isLoading;
 
-            return IconButton(
-              icon: isLoading
-                ? SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Theme.of(context).colorScheme.primary,
-                      ),
+          return IconButton(
+            icon: isLoading
+              ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Theme.of(context).colorScheme.primary,
                     ),
-                  )
-                : Icon(Icons.play_arrow),
-              onPressed: isLoading ? null : () {
-                audioService.playEpisode(episode, podcast);
-              },
-            );
-          },
-        ),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => EpisodeDetailScreen(
-                episode: episode,
-                podcast: podcast,
-              ),
-            ),
+                  ),
+                )
+              : Icon(Icons.play_arrow),
+            onPressed: isLoading ? null : () {
+              audioService.playEpisode(episode, podcast);
+            },
           );
         },
       ),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => EpisodeDetailScreen(
+              episode: episode,
+              podcast: podcast,
+            ),
+          ),
+        );
+      },
     );
   }
 }
