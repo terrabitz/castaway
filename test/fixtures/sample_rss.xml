@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+  <channel>
+    <title>Test Podcast</title>
+    <description>A test podcast for unit testing</description>
+    <link>https://example.com/podcast</link>
+    <language>en-us</language>
+    <managingEditor>test@example.com (Test Author)</managingEditor>
+    <itunes:author>Test Author</itunes:author>
+    <itunes:image href="https://example.com/podcast-image.jpg" />
+
+    <item>
+      <title>Episode 1: Introduction</title>
+      <description>This is the first episode of our test podcast</description>
+      <pubDate>Mon, 22 Sep 2025 14:00:00 GMT</pubDate>
+      <enclosure url="https://example.com/episode1.mp3" type="audio/mpeg" length="12345678" />
+      <itunes:duration>45:30</itunes:duration>
+      <itunes:image href="https://example.com/episode1-image.jpg" />
+    </item>
+
+    <item>
+      <title>Episode 2: Advanced Topics</title>
+      <description>In this episode we dive deeper into advanced topics</description>
+      <pubDate>Wed, 24 Sep 2025 10:30:00 GMT</pubDate>
+      <enclosure url="https://example.com/episode2.mp3" type="audio/mpeg" length="23456789" />
+      <itunes:duration>1:12:45</itunes:duration>
+    </item>
+
+    <item>
+      <title>Episode 3: No Duration</title>
+      <description>This episode has no duration specified</description>
+      <pubDate>Fri, 26 Sep 2025 16:45:00 GMT</pubDate>
+      <enclosure url="https://example.com/episode3.mp3" type="audio/mpeg" length="34567890" />
+    </item>
+
+    <item>
+      <title>Episode 4: Invalid Date</title>
+      <description>This episode has an invalid date format</description>
+      <pubDate>Invalid Date Format</pubDate>
+      <enclosure url="https://example.com/episode4.mp3" type="audio/mpeg" length="45678901" />
+      <itunes:duration>30:15</itunes:duration>
+    </item>
+  </channel>
+</rss>

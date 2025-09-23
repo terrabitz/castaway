@@ -89,6 +89,19 @@ class DatabaseHelper {
     return podcasts;
   }
 
+  Future<Podcast?> getPodcast(int id) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'podcasts',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    if (maps.isEmpty) return null;
+    final episodes = await _getEpisodesForPodcast(db, maps.first['id']);
+    return _mapToPodcast(maps.first, episodes);
+  }
+
   Future<Podcast?> getPodcastByRssUrl(String rssUrl) async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
