@@ -13,27 +13,28 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _isImporting = false;
   bool _isExporting = false;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Settings'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      ),
-      body: ListView(
-        children: [
-          _buildSectionHeader('Import/Export'),
-          ListTile(
-            leading: Icon(Icons.upload_file),
-            title: Text('Import OPML'),
-            subtitle: Text('Import podcast subscriptions from an OPML file'),
-            trailing: _isImporting ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(Icons.chevron_right),
-            enabled: !_isImporting,
-            onTap: _importOpml,
+    return Consumer<PodcastAppState>(
+      builder: (context, appState, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: Text('Settings'),
+            backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           ),
+          body: ListView(
+            children: [
+              _buildSectionHeader('Import/Export'),
+              ListTile(
+                leading: Icon(Icons.upload_file),
+                title: Text('Import OPML'),
+                subtitle: Text('Import podcast subscriptions from an OPML file'),
+                trailing: appState.isImporting ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(Icons.chevron_right),
+                enabled: !appState.isImporting,
+                onTap: _importOpml,
+              ),
           ListTile(
             leading: Icon(Icons.download),
             title: Text('Export OPML'),
@@ -56,8 +57,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             trailing: Icon(Icons.chevron_right),
             onTap: _showOpmlInfo,
           ),
-        ],
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -75,10 +78,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _importOpml() async {
-    setState(() {
-      _isImporting = true;
-    });
-
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
@@ -99,41 +98,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
         if (!mounted) return;
         final appState = Provider.of<PodcastAppState>(context, listen: false);
-        int imported = 0;
-        int skipped = 0;
 
-        for (final outline in outlines) {
-          try {
-            // Check if already subscribed
-            if (appState.subscriptions.any((p) => p.rssUrl == outline.xmlUrl)) {
-              skipped++;
-              continue;
-            }
+        // Navigate back to home screen
+        Navigator.of(context).pop();
 
-            await appState.addSubscription(outline.xmlUrl);
-            if (appState.error == null) {
-              imported++;
-            } else {
-              skipped++;
-              appState.clearError(); // Clear error for next attempt
-            }
-          } catch (e) {
-            skipped++;
-          }
-        }
-
-        if (mounted) {
-          _showMessage('Import completed: $imported added, $skipped skipped');
-        }
+        // Start the import process
+        appState.importOpmlPodcasts(outlines);
       }
     } catch (e) {
       if (mounted) {
         _showMessage('Failed to import OPML: $e');
       }
-    } finally {
-      setState(() {
-        _isImporting = false;
-      });
     }
   }
 

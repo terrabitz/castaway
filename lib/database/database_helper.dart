@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/podcast.dart';
@@ -22,7 +21,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
     );
   }
@@ -36,22 +35,58 @@ class DatabaseHelper {
         rss_url TEXT UNIQUE NOT NULL,
         image_url TEXT,
         author TEXT,
-        episodes_json TEXT NOT NULL,
         last_fetched INTEGER
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE episodes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        podcast_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        audio_url TEXT NOT NULL,
+        pub_date INTEGER NOT NULL,
+        duration_seconds INTEGER,
+        image_url TEXT,
+        FOREIGN KEY (podcast_id) REFERENCES podcasts (id) ON DELETE CASCADE
+      )
+    ''');
+
+    await db.execute('''
+      CREATE INDEX idx_episodes_podcast_id ON episodes (podcast_id)
+    ''');
+
+    await db.execute('''
+      CREATE INDEX idx_episodes_pub_date ON episodes (pub_date DESC)
+    ''');
   }
+
 
   Future<int> insertPodcast(Podcast podcast) async {
     final db = await database;
     final map = _podcastToMap(podcast);
-    return await db.insert('podcasts', map);
+    final podcastId = await db.insert('podcasts', map);
+
+    // Insert episodes separately
+    for (final episode in podcast.episodes) {
+      await _insertEpisode(db, podcastId, episode);
+    }
+
+    return podcastId;
   }
 
   Future<List<Podcast>> getAllPodcasts() async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query('podcasts');
-    return maps.map((map) => _mapToPodcast(map)).toList();
+    final List<Podcast> podcasts = [];
+
+    for (final map in maps) {
+      final episodes = await _getEpisodesForPodcast(db, map['id']);
+      podcasts.add(_mapToPodcast(map, episodes));
+    }
+
+    return podcasts;
   }
 
   Future<Podcast?> getPodcastByRssUrl(String rssUrl) async {
@@ -63,22 +98,37 @@ class DatabaseHelper {
     );
 
     if (maps.isEmpty) return null;
-    return _mapToPodcast(maps.first);
+    final episodes = await _getEpisodesForPodcast(db, maps.first['id']);
+    return _mapToPodcast(maps.first, episodes);
   }
 
   Future<int> updatePodcast(Podcast podcast) async {
     final db = await database;
     final map = _podcastToMap(podcast);
-    return await db.update(
+    final result = await db.update(
       'podcasts',
       map,
       where: 'id = ?',
       whereArgs: [podcast.id],
     );
+
+    // Update episodes - delete old ones and insert new ones
+    await db.delete(
+      'episodes',
+      where: 'podcast_id = ?',
+      whereArgs: [podcast.id],
+    );
+
+    for (final episode in podcast.episodes) {
+      await _insertEpisode(db, podcast.id!, episode);
+    }
+
+    return result;
   }
 
   Future<int> deletePodcast(int id) async {
     final db = await database;
+    // Episodes will be deleted automatically due to CASCADE
     return await db.delete(
       'podcasts',
       where: 'id = ?',
@@ -88,6 +138,7 @@ class DatabaseHelper {
 
   Future<int> deletePodcastByRssUrl(String rssUrl) async {
     final db = await database;
+    // Episodes will be deleted automatically due to CASCADE
     return await db.delete(
       'podcasts',
       where: 'rss_url = ?',
@@ -97,14 +148,23 @@ class DatabaseHelper {
 
   Future<void> updatePodcastEpisodes(int podcastId, List<Episode> episodes) async {
     final db = await database;
-    final episodesJson = jsonEncode(episodes.map((e) => e.toJson()).toList());
 
+    // Delete existing episodes
+    await db.delete(
+      'episodes',
+      where: 'podcast_id = ?',
+      whereArgs: [podcastId],
+    );
+
+    // Insert new episodes
+    for (final episode in episodes) {
+      await _insertEpisode(db, podcastId, episode);
+    }
+
+    // Update last_fetched timestamp
     await db.update(
       'podcasts',
-      {
-        'episodes_json': episodesJson,
-        'last_fetched': DateTime.now().millisecondsSinceEpoch,
-      },
+      {'last_fetched': DateTime.now().millisecondsSinceEpoch},
       where: 'id = ?',
       whereArgs: [podcastId],
     );
@@ -119,18 +179,11 @@ class DatabaseHelper {
       'rss_url': podcast.rssUrl,
       'image_url': podcast.imageUrl,
       'author': podcast.author,
-      'episodes_json': jsonEncode(podcast.episodes.map((e) => e.toJson()).toList()),
       'last_fetched': podcast.lastFetched?.millisecondsSinceEpoch,
     };
   }
 
-  Podcast _mapToPodcast(Map<String, dynamic> map) {
-    final episodesJson = map['episodes_json'] as String? ?? '[]';
-    final episodesList = jsonDecode(episodesJson) as List<dynamic>;
-    final episodes = episodesList
-        .map((e) => Episode.fromJson(e as Map<String, dynamic>))
-        .toList();
-
+  Podcast _mapToPodcast(Map<String, dynamic> map, List<Episode> episodes) {
     return Podcast(
       id: map['id'],
       title: map['title'] ?? '',
@@ -143,6 +196,47 @@ class DatabaseHelper {
           ? DateTime.fromMillisecondsSinceEpoch(map['last_fetched'])
           : null,
     );
+  }
+
+  Future<List<Episode>> _getEpisodesForPodcast(Database db, int podcastId) async {
+    final List<Map<String, dynamic>> maps = await db.query(
+      'episodes',
+      where: 'podcast_id = ?',
+      whereArgs: [podcastId],
+      orderBy: 'pub_date DESC',
+    );
+
+    return maps.map((map) => _mapToEpisode(map)).toList();
+  }
+
+  Future<int> _insertEpisode(Database db, int podcastId, Episode episode) async {
+    return await db.insert('episodes', {
+      'podcast_id': podcastId,
+      'title': episode.title,
+      'description': episode.description,
+      'audio_url': episode.audioUrl,
+      'pub_date': episode.pubDate.millisecondsSinceEpoch,
+      'duration_seconds': episode.duration?.inSeconds,
+      'image_url': episode.imageUrl,
+    });
+  }
+
+  Episode _mapToEpisode(Map<String, dynamic> map) {
+    return Episode(
+      title: map['title'] ?? '',
+      description: map['description'] ?? '',
+      audioUrl: map['audio_url'] ?? '',
+      pubDate: DateTime.fromMillisecondsSinceEpoch(map['pub_date'] ?? 0),
+      duration: map['duration_seconds'] != null
+          ? Duration(seconds: map['duration_seconds'])
+          : null,
+      imageUrl: map['image_url'],
+    );
+  }
+
+  Future<List<Episode>> getEpisodesForPodcast(int podcastId) async {
+    final db = await database;
+    return await _getEpisodesForPodcast(db, podcastId);
   }
 
   Future<void> close() async {

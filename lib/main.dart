@@ -9,6 +9,7 @@ import 'screens/episode_list_screen.dart';
 import 'screens/settings_screen.dart';
 import 'widgets/mini_player.dart';
 import 'widgets/podcast_tile.dart';
+import 'services/opml_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -82,11 +83,17 @@ class PodcastAppState extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   bool _initialized = false;
+  bool _isImporting = false;
+  int _importProgress = 0;
+  int _importTotal = 0;
 
   List<Podcast> get subscriptions => _subscriptions;
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get initialized => _initialized;
+  bool get isImporting => _isImporting;
+  int get importProgress => _importProgress;
+  int get importTotal => _importTotal;
 
   Future<void> initialize() async {
     if (_initialized) return;
@@ -157,6 +164,52 @@ class PodcastAppState extends ChangeNotifier {
 
   void clearError() {
     _error = null;
+    notifyListeners();
+  }
+
+  Future<void> importOpmlPodcasts(List<OpmlOutline> outlines) async {
+    _isImporting = true;
+    _importProgress = 0;
+    _importTotal = outlines.length;
+    _error = null;
+    notifyListeners();
+
+    int imported = 0;
+    int skipped = 0;
+
+    for (int i = 0; i < outlines.length; i++) {
+      final outline = outlines[i];
+
+      try {
+        // Check if already subscribed
+        if (_subscriptions.any((p) => p.rssUrl == outline.xmlUrl)) {
+          skipped++;
+        } else {
+          await addSubscription(outline.xmlUrl);
+          if (_error == null) {
+            imported++;
+          } else {
+            skipped++;
+            clearError(); // Clear error for next attempt
+          }
+        }
+      } catch (e) {
+        skipped++;
+      }
+
+      _importProgress = i + 1;
+      notifyListeners();
+    }
+
+    _isImporting = false;
+    _importProgress = 0;
+    _importTotal = 0;
+
+    if (imported > 0 || skipped > 0) {
+      // Don't set error for successful completion
+      _error = null;
+    }
+
     notifyListeners();
   }
 }
@@ -255,6 +308,49 @@ class _MyHomePageState extends State<MyHomePage> {
                       IconButton(
                         onPressed: appState.clearError,
                         icon: Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                ),
+              if (appState.isImporting)
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(16),
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Theme.of(context).colorScheme.onPrimaryContainer,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Importing podcast subscriptions...',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            if (appState.importTotal > 0)
+                              Text(
+                                '${appState.importProgress} of ${appState.importTotal} podcasts',
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
+                                  fontSize: 12,
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
