@@ -213,8 +213,13 @@ class _EpisodeListScreenState extends State<EpisodeListScreen> {
 
 class PodcastDescription extends StatefulWidget {
   final String description;
+  final double maxHeight;
 
-  const PodcastDescription({super.key, required this.description});
+  const PodcastDescription({
+    super.key,
+    required this.description,
+    this.maxHeight = 100.0,
+  });
 
   @override
   State<PodcastDescription> createState() => _PodcastDescriptionState();
@@ -237,9 +242,8 @@ class _PodcastDescriptionState extends State<PodcastDescription> {
       if (context != null && mounted) {
         final renderBox = context.findRenderObject() as RenderBox?;
         if (renderBox != null) {
-          final maxHeight = 72.0;
           final actualHeight = renderBox.size.height;
-          if (actualHeight > maxHeight && !_showReadMore) {
+          if (actualHeight > widget.maxHeight && !_showReadMore) {
             setState(() {
               _showReadMore = true;
             });
@@ -258,7 +262,7 @@ class _PodcastDescriptionState extends State<PodcastDescription> {
             ClipRect(
               child: Container(
                 constraints: BoxConstraints(
-                  maxHeight: _isExpanded ? double.infinity : 72,
+                  maxHeight: _isExpanded ? double.infinity : widget.maxHeight,
                 ),
                 child: SingleChildScrollView(
                   physics: NeverScrollableScrollPhysics(),
