@@ -10,10 +10,7 @@ import 'episode_detail_screen.dart';
 class EpisodeListScreen extends StatefulWidget {
   final Podcast podcast;
 
-  const EpisodeListScreen({
-    super.key,
-    required this.podcast,
-  });
+  const EpisodeListScreen({super.key, required this.podcast});
 
   @override
   State<EpisodeListScreen> createState() => _EpisodeListScreenState();
@@ -126,9 +123,8 @@ class _EpisodeListScreenState extends State<EpisodeListScreen> {
                         SizedBox(height: 4),
                         Text(
                           _podcast.author!,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey.shade600,
-                          ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: Colors.grey.shade600),
                         ),
                       ],
                       SizedBox(height: 8),
@@ -147,20 +143,12 @@ class _EpisodeListScreenState extends State<EpisodeListScreen> {
           Divider(),
           // Episodes list
           Expanded(
-            child: _isLoading
-              ? Center(
-                  child: CircularProgressIndicator(),
-                )
-              : _episodes.isEmpty
+            child: _episodes.isEmpty && !_isLoading
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.playlist_play,
-                          size: 64,
-                          color: Colors.grey,
-                        ),
+                        Icon(Icons.playlist_play, size: 64, color: Colors.grey),
                         SizedBox(height: 16),
                         Text(
                           'No episodes available',
@@ -170,15 +158,12 @@ class _EpisodeListScreenState extends State<EpisodeListScreen> {
                     ),
                   )
                 : ListView.builder(
-                    itemCount: _episodes.length,
-                    itemBuilder: (context, index) {
-                      final episode = _episodes[index];
-                      return EpisodeTile(
-                        episode: episode,
-                        podcast: _podcast,
-                      );
-                    },
-                  ),
+                  itemCount: _episodes.length,
+                  itemBuilder: (context, index) {
+                    final episode = _episodes[index];
+                    return EpisodeTile(episode: episode, podcast: _podcast);
+                  },
+                ),
           ),
         ],
       ),
@@ -191,11 +176,7 @@ class EpisodeTile extends StatelessWidget {
   final Episode episode;
   final Podcast podcast;
 
-  const EpisodeTile({
-    super.key,
-    required this.episode,
-    required this.podcast,
-  });
+  const EpisodeTile({super.key, required this.episode, required this.podcast});
 
   @override
   Widget build(BuildContext context) {
@@ -208,22 +189,22 @@ class EpisodeTile extends StatelessWidget {
             children: [
               Text(
                 episode.formattedDate,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey.shade600,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
               ),
               if (episode.formattedDuration.isNotEmpty) ...[
                 Text(
                   ' • ',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey.shade600,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
                 ),
                 Text(
                   episode.formattedDuration,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey.shade600,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
                 ),
               ],
             ],
@@ -244,20 +225,22 @@ class EpisodeTile extends StatelessWidget {
 
           return IconButton(
             icon: isLoading
-              ? SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Theme.of(context).colorScheme.primary,
+                ? SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Theme.of(context).colorScheme.primary,
+                      ),
                     ),
-                  ),
-                )
-              : Icon(Icons.play_arrow),
-            onPressed: isLoading ? null : () {
-              audioService.playEpisode(episode, podcast);
-            },
+                  )
+                : Icon(Icons.play_arrow),
+            onPressed: isLoading
+                ? null
+                : () {
+                    audioService.playEpisode(episode, podcast);
+                  },
           );
         },
       ),
@@ -265,10 +248,8 @@ class EpisodeTile extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => EpisodeDetailScreen(
-              episode: episode,
-              podcast: podcast,
-            ),
+            builder: (context) =>
+                EpisodeDetailScreen(episode: episode, podcast: podcast),
           ),
         );
       },
