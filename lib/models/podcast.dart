@@ -1,3 +1,17 @@
+enum EpisodeSortOrder {
+  newestFirst,
+  oldestFirst;
+
+  String get displayName {
+    switch (this) {
+      case EpisodeSortOrder.newestFirst:
+        return 'Newest to Oldest';
+      case EpisodeSortOrder.oldestFirst:
+        return 'Oldest to Newest';
+    }
+  }
+}
+
 class Podcast {
   final int? id;
   final String title;
@@ -7,6 +21,7 @@ class Podcast {
   final String? author;
   final List<Episode> episodes;
   final DateTime? lastFetched;
+  final EpisodeSortOrder sortOrder;
 
   Podcast({
     this.id,
@@ -17,6 +32,7 @@ class Podcast {
     this.author,
     this.episodes = const [],
     this.lastFetched,
+    this.sortOrder = EpisodeSortOrder.newestFirst,
   });
 
   Podcast copyWith({
@@ -28,6 +44,7 @@ class Podcast {
     String? author,
     List<Episode>? episodes,
     DateTime? lastFetched,
+    EpisodeSortOrder? sortOrder,
   }) {
     return Podcast(
       id: id ?? this.id,
@@ -38,6 +55,7 @@ class Podcast {
       author: author ?? this.author,
       episodes: episodes ?? this.episodes,
       lastFetched: lastFetched ?? this.lastFetched,
+      sortOrder: sortOrder ?? this.sortOrder,
     );
   }
 
@@ -51,6 +69,7 @@ class Podcast {
       'author': author,
       'episodes': episodes.map((e) => e.toJson()).toList(),
       'lastFetched': lastFetched?.millisecondsSinceEpoch,
+      'sortOrder': sortOrder.index,
     };
   }
 
@@ -68,6 +87,9 @@ class Podcast {
       lastFetched: json['lastFetched'] != null
           ? DateTime.fromMillisecondsSinceEpoch(json['lastFetched'])
           : null,
+      sortOrder: json['sortOrder'] != null
+          ? EpisodeSortOrder.values[json['sortOrder']]
+          : EpisodeSortOrder.newestFirst,
     );
   }
 

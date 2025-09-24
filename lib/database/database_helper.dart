@@ -35,7 +35,8 @@ class DatabaseHelper {
         rss_url TEXT UNIQUE NOT NULL,
         image_url TEXT,
         author TEXT,
-        last_fetched INTEGER
+        last_fetched INTEGER,
+        sort_order INTEGER NOT NULL DEFAULT 0
       )
     ''');
 
@@ -82,7 +83,11 @@ class DatabaseHelper {
     final List<Podcast> podcasts = [];
 
     for (final map in maps) {
-      final episodes = await _getEpisodesForPodcast(db, map['id']);
+      final sortOrderValue = map['sort_order'];
+      final sortOrder = sortOrderValue != null
+          ? EpisodeSortOrder.values[sortOrderValue is int ? sortOrderValue : int.parse(sortOrderValue.toString())]
+          : EpisodeSortOrder.newestFirst;
+      final episodes = await _getEpisodesForPodcast(db, map['id'], sortOrder: sortOrder);
       podcasts.add(_mapToPodcast(map, episodes));
     }
 
@@ -98,7 +103,11 @@ class DatabaseHelper {
     );
 
     if (maps.isEmpty) return null;
-    final episodes = await _getEpisodesForPodcast(db, maps.first['id']);
+    final sortOrderValue = maps.first['sort_order'];
+    final sortOrder = sortOrderValue != null
+        ? EpisodeSortOrder.values[sortOrderValue is int ? sortOrderValue : int.parse(sortOrderValue.toString())]
+        : EpisodeSortOrder.newestFirst;
+    final episodes = await _getEpisodesForPodcast(db, maps.first['id'], sortOrder: sortOrder);
     return _mapToPodcast(maps.first, episodes);
   }
 
@@ -111,7 +120,11 @@ class DatabaseHelper {
     );
 
     if (maps.isEmpty) return null;
-    final episodes = await _getEpisodesForPodcast(db, maps.first['id']);
+    final sortOrderValue = maps.first['sort_order'];
+    final sortOrder = sortOrderValue != null
+        ? EpisodeSortOrder.values[sortOrderValue is int ? sortOrderValue : int.parse(sortOrderValue.toString())]
+        : EpisodeSortOrder.newestFirst;
+    final episodes = await _getEpisodesForPodcast(db, maps.first['id'], sortOrder: sortOrder);
     return _mapToPodcast(maps.first, episodes);
   }
 
@@ -193,6 +206,7 @@ class DatabaseHelper {
       'image_url': podcast.imageUrl,
       'author': podcast.author,
       'last_fetched': podcast.lastFetched?.millisecondsSinceEpoch,
+      'sort_order': podcast.sortOrder.index,
     };
   }
 
@@ -208,15 +222,25 @@ class DatabaseHelper {
       lastFetched: map['last_fetched'] != null
           ? DateTime.fromMillisecondsSinceEpoch(map['last_fetched'])
           : null,
+      sortOrder: (() {
+        final sortOrderValue = map['sort_order'];
+        return sortOrderValue != null
+            ? EpisodeSortOrder.values[sortOrderValue is int ? sortOrderValue : int.parse(sortOrderValue.toString())]
+            : EpisodeSortOrder.newestFirst;
+      })(),
     );
   }
 
-  Future<List<Episode>> _getEpisodesForPodcast(Database db, int podcastId) async {
+  Future<List<Episode>> _getEpisodesForPodcast(Database db, int podcastId, {EpisodeSortOrder sortOrder = EpisodeSortOrder.newestFirst}) async {
+    final orderBy = sortOrder == EpisodeSortOrder.newestFirst
+        ? 'pub_date DESC'
+        : 'pub_date ASC';
+
     final List<Map<String, dynamic>> maps = await db.query(
       'episodes',
       where: 'podcast_id = ?',
       whereArgs: [podcastId],
-      orderBy: 'pub_date DESC',
+      orderBy: orderBy,
     );
 
     return maps.map((map) => _mapToEpisode(map)).toList();
@@ -247,9 +271,9 @@ class DatabaseHelper {
     );
   }
 
-  Future<List<Episode>> getEpisodesForPodcast(int podcastId) async {
+  Future<List<Episode>> getEpisodesForPodcast(int podcastId, {EpisodeSortOrder sortOrder = EpisodeSortOrder.newestFirst}) async {
     final db = await database;
-    return await _getEpisodesForPodcast(db, podcastId);
+    return await _getEpisodesForPodcast(db, podcastId, sortOrder: sortOrder);
   }
 
   Future<void> close() async {

@@ -4,9 +4,10 @@ import '../models/podcast.dart';
 import '../services/audio_player_service.dart';
 import '../widgets/mini_player.dart';
 import '../widgets/podcast_image.dart';
+import '../database/database_helper.dart';
 import 'episode_detail_screen.dart';
 
-class EpisodeListScreen extends StatelessWidget {
+class EpisodeListScreen extends StatefulWidget {
   final Podcast podcast;
 
   const EpisodeListScreen({
@@ -15,11 +16,72 @@ class EpisodeListScreen extends StatelessWidget {
   });
 
   @override
+  State<EpisodeListScreen> createState() => _EpisodeListScreenState();
+}
+
+class _EpisodeListScreenState extends State<EpisodeListScreen> {
+  late Podcast _podcast;
+
+  @override
+  void initState() {
+    super.initState();
+    _podcast = widget.podcast;
+  }
+
+  void _updateSortOrder(EpisodeSortOrder newSortOrder) async {
+    final updatedPodcast = _podcast.copyWith(sortOrder: newSortOrder);
+
+    final dbHelper = DatabaseHelper();
+    await dbHelper.updatePodcast(updatedPodcast);
+
+    final refreshedPodcast = await dbHelper.getPodcast(_podcast.id!);
+    if (refreshedPodcast != null) {
+      setState(() {
+        _podcast = refreshedPodcast;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(podcast.title),
+        title: Text(_podcast.title),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          PopupMenuButton<EpisodeSortOrder>(
+            icon: Icon(Icons.sort),
+            onSelected: _updateSortOrder,
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: EpisodeSortOrder.newestFirst,
+                child: Row(
+                  children: [
+                    if (_podcast.sortOrder == EpisodeSortOrder.newestFirst)
+                      Icon(Icons.check, size: 20)
+                    else
+                      SizedBox(width: 20),
+                    SizedBox(width: 8),
+                    Text(EpisodeSortOrder.newestFirst.displayName),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: EpisodeSortOrder.oldestFirst,
+                child: Row(
+                  children: [
+                    if (_podcast.sortOrder == EpisodeSortOrder.oldestFirst)
+                      Icon(Icons.check, size: 20)
+                    else
+                      SizedBox(width: 20),
+                    SizedBox(width: 8),
+                    Text(EpisodeSortOrder.oldestFirst.displayName),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -30,7 +92,7 @@ class EpisodeListScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 PodcastImage(
-                  imageUrl: podcast.imageUrl,
+                  imageUrl: _podcast.imageUrl,
                   width: 80,
                   height: 80,
                   fit: BoxFit.cover,
@@ -43,15 +105,15 @@ class EpisodeListScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        podcast.title,
+                        _podcast.title,
                         style: Theme.of(context).textTheme.titleLarge,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (podcast.author != null) ...[
+                      if (_podcast.author != null) ...[
                         SizedBox(height: 4),
                         Text(
-                          podcast.author!,
+                          _podcast.author!,
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Colors.grey.shade600,
                           ),
@@ -59,7 +121,7 @@ class EpisodeListScreen extends StatelessWidget {
                       ],
                       SizedBox(height: 8),
                       Text(
-                        '${podcast.episodes.length} episodes',
+                        '${_podcast.episodes.length} episodes',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.grey.shade600,
                         ),
@@ -73,7 +135,7 @@ class EpisodeListScreen extends StatelessWidget {
           Divider(),
           // Episodes list
           Expanded(
-            child: podcast.episodes.isEmpty
+            child: _podcast.episodes.isEmpty
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -92,12 +154,12 @@ class EpisodeListScreen extends StatelessWidget {
                   ),
                 )
               : ListView.builder(
-                  itemCount: podcast.episodes.length,
+                  itemCount: _podcast.episodes.length,
                   itemBuilder: (context, index) {
-                    final episode = podcast.episodes[index];
+                    final episode = _podcast.episodes[index];
                     return EpisodeTile(
                       episode: episode,
-                      podcast: podcast,
+                      podcast: _podcast,
                     );
                   },
                 ),

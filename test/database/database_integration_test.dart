@@ -274,5 +274,118 @@ void main() {
         throwsException,
       );
     });
+
+    test('should default to newest first sort order', () async {
+      final podcast = Podcast(
+        title: 'Sort Order Test',
+        description: 'Testing default sort order',
+        rssUrl: 'https://example.com/sort-test.xml',
+        episodes: [
+          Episode(
+            title: 'Episode 1',
+            description: 'Oldest episode',
+            audioUrl: 'https://example.com/ep1.mp3',
+            pubDate: DateTime(2025, 9, 20),
+          ),
+          Episode(
+            title: 'Episode 2',
+            description: 'Newest episode',
+            audioUrl: 'https://example.com/ep2.mp3',
+            pubDate: DateTime(2025, 9, 23),
+          ),
+          Episode(
+            title: 'Episode 3',
+            description: 'Middle episode',
+            audioUrl: 'https://example.com/ep3.mp3',
+            pubDate: DateTime(2025, 9, 21),
+          ),
+        ],
+      );
+
+      final podcastId = await dbHelper.insertPodcast(podcast);
+      final retrieved = await dbHelper.getPodcast(podcastId);
+
+      expect(retrieved, isNotNull);
+      expect(retrieved!.sortOrder, equals(EpisodeSortOrder.newestFirst));
+      expect(retrieved.episodes.length, equals(3));
+      expect(retrieved.episodes[0].title, equals('Episode 2'));
+      expect(retrieved.episodes[1].title, equals('Episode 3'));
+      expect(retrieved.episodes[2].title, equals('Episode 1'));
+    });
+
+    test('should sort episodes oldest first when configured', () async {
+      final podcast = Podcast(
+        title: 'Oldest First Test',
+        description: 'Testing oldest first sort order',
+        rssUrl: 'https://example.com/oldest-first.xml',
+        sortOrder: EpisodeSortOrder.oldestFirst,
+        episodes: [
+          Episode(
+            title: 'Episode 1',
+            description: 'Oldest episode',
+            audioUrl: 'https://example.com/ep1.mp3',
+            pubDate: DateTime(2025, 9, 20),
+          ),
+          Episode(
+            title: 'Episode 2',
+            description: 'Newest episode',
+            audioUrl: 'https://example.com/ep2.mp3',
+            pubDate: DateTime(2025, 9, 23),
+          ),
+          Episode(
+            title: 'Episode 3',
+            description: 'Middle episode',
+            audioUrl: 'https://example.com/ep3.mp3',
+            pubDate: DateTime(2025, 9, 21),
+          ),
+        ],
+      );
+
+      final podcastId = await dbHelper.insertPodcast(podcast);
+      final retrieved = await dbHelper.getPodcast(podcastId);
+
+      expect(retrieved, isNotNull);
+      expect(retrieved!.sortOrder, equals(EpisodeSortOrder.oldestFirst));
+      expect(retrieved.episodes.length, equals(3));
+      expect(retrieved.episodes[0].title, equals('Episode 1'));
+      expect(retrieved.episodes[1].title, equals('Episode 3'));
+      expect(retrieved.episodes[2].title, equals('Episode 2'));
+    });
+
+    test('should update podcast sort order', () async {
+      final podcast = Podcast(
+        title: 'Update Sort Order Test',
+        description: 'Testing sort order updates',
+        rssUrl: 'https://example.com/update-sort.xml',
+        episodes: [
+          Episode(
+            title: 'Episode 1',
+            description: 'Oldest episode',
+            audioUrl: 'https://example.com/ep1.mp3',
+            pubDate: DateTime(2025, 9, 20),
+          ),
+          Episode(
+            title: 'Episode 2',
+            description: 'Newest episode',
+            audioUrl: 'https://example.com/ep2.mp3',
+            pubDate: DateTime(2025, 9, 23),
+          ),
+        ],
+      );
+
+      final podcastId = await dbHelper.insertPodcast(podcast);
+      var retrieved = await dbHelper.getPodcast(podcastId);
+      expect(retrieved!.sortOrder, equals(EpisodeSortOrder.newestFirst));
+      expect(retrieved.episodes[0].title, equals('Episode 2'));
+
+      final updatedPodcast = retrieved.copyWith(
+        sortOrder: EpisodeSortOrder.oldestFirst,
+      );
+      await dbHelper.updatePodcast(updatedPodcast);
+
+      retrieved = await dbHelper.getPodcast(podcastId);
+      expect(retrieved!.sortOrder, equals(EpisodeSortOrder.oldestFirst));
+      expect(retrieved.episodes[0].title, equals('Episode 1'));
+    });
   });
 }
