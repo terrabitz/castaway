@@ -52,7 +52,7 @@ class _PodcastsScreenState extends State<PodcastsScreen> {
             return Center(child: CircularProgressIndicator());
           }
 
-          if (appState.subscriptions.isEmpty) {
+          if (appState.subscriptions.isEmpty && !appState.isImporting) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
