@@ -360,7 +360,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   padding: EdgeInsets.all(8),
                   child: GridView.builder(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
+                      crossAxisCount: 3,
                       childAspectRatio: 1.0,
                       crossAxisSpacing: 8,
                       mainAxisSpacing: 8,
