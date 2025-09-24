@@ -20,33 +20,74 @@ class EpisodeListScreen extends StatefulWidget {
 }
 
 class _EpisodeListScreenState extends State<EpisodeListScreen> {
-  late Podcast _podcast;
+  final DatabaseHelper _dbHelper = DatabaseHelper();
+  Podcast? _podcast;
+  List<Episode> _episodes = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _podcast = widget.podcast;
+    _loadPodcastData();
   }
 
-  void _updateSortOrder(EpisodeSortOrder newSortOrder) async {
-    final updatedPodcast = _podcast.copyWith(sortOrder: newSortOrder);
+  Future<void> _loadPodcastData() async {
+    setState(() {
+      _isLoading = true;
+    });
 
-    final dbHelper = DatabaseHelper();
-    await dbHelper.updatePodcast(updatedPodcast);
-
-    final refreshedPodcast = await dbHelper.getPodcast(_podcast.id!);
-    if (refreshedPodcast != null) {
+    final podcast = await _dbHelper.getPodcast(widget.podcast.id!);
+    if (podcast != null) {
+      final episodes = await _dbHelper.getEpisodesForPodcast(podcast.id!);
       setState(() {
-        _podcast = refreshedPodcast;
+        _podcast = podcast;
+        _episodes = episodes;
+        _isLoading = false;
+      });
+    } else {
+      setState(() {
+        _isLoading = false;
       });
     }
   }
 
+  void _updateSortOrder(EpisodeSortOrder newSortOrder) async {
+    if (_podcast == null) return;
+
+    final updatedPodcast = _podcast!.copyWith(sortOrder: newSortOrder);
+    await _dbHelper.updatePodcast(updatedPodcast);
+    await _loadPodcastData();
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(widget.podcast.title),
+          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        ),
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_podcast == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(widget.podcast.title),
+          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        ),
+        body: Center(
+          child: Text('Podcast not found'),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(_podcast.title),
+        title: Text(_podcast!.title),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           PopupMenuButton<EpisodeSortOrder>(
@@ -57,7 +98,7 @@ class _EpisodeListScreenState extends State<EpisodeListScreen> {
                 value: EpisodeSortOrder.newestFirst,
                 child: Row(
                   children: [
-                    if (_podcast.sortOrder == EpisodeSortOrder.newestFirst)
+                    if (_podcast!.sortOrder == EpisodeSortOrder.newestFirst)
                       Icon(Icons.check, size: 20)
                     else
                       SizedBox(width: 20),
@@ -70,7 +111,7 @@ class _EpisodeListScreenState extends State<EpisodeListScreen> {
                 value: EpisodeSortOrder.oldestFirst,
                 child: Row(
                   children: [
-                    if (_podcast.sortOrder == EpisodeSortOrder.oldestFirst)
+                    if (_podcast!.sortOrder == EpisodeSortOrder.oldestFirst)
                       Icon(Icons.check, size: 20)
                     else
                       SizedBox(width: 20),
@@ -92,7 +133,7 @@ class _EpisodeListScreenState extends State<EpisodeListScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 PodcastImage(
-                  imageUrl: _podcast.imageUrl,
+                  imageUrl: _podcast!.imageUrl,
                   width: 80,
                   height: 80,
                   fit: BoxFit.cover,
@@ -105,15 +146,15 @@ class _EpisodeListScreenState extends State<EpisodeListScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _podcast.title,
+                        _podcast!.title,
                         style: Theme.of(context).textTheme.titleLarge,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (_podcast.author != null) ...[
+                      if (_podcast!.author != null) ...[
                         SizedBox(height: 4),
                         Text(
-                          _podcast.author!,
+                          _podcast!.author!,
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Colors.grey.shade600,
                           ),
@@ -121,7 +162,7 @@ class _EpisodeListScreenState extends State<EpisodeListScreen> {
                       ],
                       SizedBox(height: 8),
                       Text(
-                        '${_podcast.episodes.length} episodes',
+                        '${_episodes.length} episodes',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.grey.shade600,
                         ),
@@ -135,7 +176,7 @@ class _EpisodeListScreenState extends State<EpisodeListScreen> {
           Divider(),
           // Episodes list
           Expanded(
-            child: _podcast.episodes.isEmpty
+            child: _episodes.isEmpty
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -154,12 +195,12 @@ class _EpisodeListScreenState extends State<EpisodeListScreen> {
                   ),
                 )
               : ListView.builder(
-                  itemCount: _podcast.episodes.length,
+                  itemCount: _episodes.length,
                   itemBuilder: (context, index) {
-                    final episode = _podcast.episodes[index];
+                    final episode = _episodes[index];
                     return EpisodeTile(
                       episode: episode,
-                      podcast: _podcast,
+                      podcast: _podcast!,
                     );
                   },
                 ),

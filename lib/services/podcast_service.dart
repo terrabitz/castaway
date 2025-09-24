@@ -48,11 +48,11 @@ class PodcastService {
 
       final podcast = parseRss(response.body, rssUrl);
 
-      // Update database if this is an existing subscription
       final existing = await _dbHelper.getPodcastByRssUrl(rssUrl);
       if (existing != null) {
-        final updatedPodcast = podcast.copyWith(id: existing.id);
+        final updatedPodcast = podcast.copyWith(id: existing.id, sortOrder: existing.sortOrder);
         await _dbHelper.updatePodcast(updatedPodcast);
+        await _dbHelper.updatePodcastEpisodes(existing.id!, podcast.episodes);
         return updatedPodcast;
       }
 
@@ -65,6 +65,7 @@ class PodcastService {
   static Future<Podcast> addPodcastSubscription(String rssUrl) async {
     final podcast = await fetchPodcast(rssUrl);
     final id = await _dbHelper.insertPodcast(podcast);
+    await _dbHelper.updatePodcastEpisodes(id, podcast.episodes);
     return podcast.copyWith(id: id);
   }
 

@@ -67,31 +67,13 @@ class DatabaseHelper {
   Future<int> insertPodcast(Podcast podcast) async {
     final db = await database;
     final map = _podcastToMap(podcast);
-    final podcastId = await db.insert('podcasts', map);
-
-    // Insert episodes separately
-    for (final episode in podcast.episodes) {
-      await _insertEpisode(db, podcastId, episode);
-    }
-
-    return podcastId;
+    return await db.insert('podcasts', map);
   }
 
   Future<List<Podcast>> getAllPodcasts() async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query('podcasts');
-    final List<Podcast> podcasts = [];
-
-    for (final map in maps) {
-      final sortOrderValue = map['sort_order'];
-      final sortOrder = sortOrderValue != null
-          ? EpisodeSortOrder.values[sortOrderValue is int ? sortOrderValue : int.parse(sortOrderValue.toString())]
-          : EpisodeSortOrder.newestFirst;
-      final episodes = await _getEpisodesForPodcast(db, map['id'], sortOrder: sortOrder);
-      podcasts.add(_mapToPodcast(map, episodes));
-    }
-
-    return podcasts;
+    return maps.map((map) => _mapToPodcast(map, [])).toList();
   }
 
   Future<Podcast?> getPodcast(int id) async {
@@ -103,12 +85,7 @@ class DatabaseHelper {
     );
 
     if (maps.isEmpty) return null;
-    final sortOrderValue = maps.first['sort_order'];
-    final sortOrder = sortOrderValue != null
-        ? EpisodeSortOrder.values[sortOrderValue is int ? sortOrderValue : int.parse(sortOrderValue.toString())]
-        : EpisodeSortOrder.newestFirst;
-    final episodes = await _getEpisodesForPodcast(db, maps.first['id'], sortOrder: sortOrder);
-    return _mapToPodcast(maps.first, episodes);
+    return _mapToPodcast(maps.first, []);
   }
 
   Future<Podcast?> getPodcastByRssUrl(String rssUrl) async {
@@ -120,36 +97,18 @@ class DatabaseHelper {
     );
 
     if (maps.isEmpty) return null;
-    final sortOrderValue = maps.first['sort_order'];
-    final sortOrder = sortOrderValue != null
-        ? EpisodeSortOrder.values[sortOrderValue is int ? sortOrderValue : int.parse(sortOrderValue.toString())]
-        : EpisodeSortOrder.newestFirst;
-    final episodes = await _getEpisodesForPodcast(db, maps.first['id'], sortOrder: sortOrder);
-    return _mapToPodcast(maps.first, episodes);
+    return _mapToPodcast(maps.first, []);
   }
 
   Future<int> updatePodcast(Podcast podcast) async {
     final db = await database;
     final map = _podcastToMap(podcast);
-    final result = await db.update(
+    return await db.update(
       'podcasts',
       map,
       where: 'id = ?',
       whereArgs: [podcast.id],
     );
-
-    // Update episodes - delete old ones and insert new ones
-    await db.delete(
-      'episodes',
-      where: 'podcast_id = ?',
-      whereArgs: [podcast.id],
-    );
-
-    for (final episode in podcast.episodes) {
-      await _insertEpisode(db, podcast.id!, episode);
-    }
-
-    return result;
   }
 
   Future<int> deletePodcast(int id) async {
@@ -271,9 +230,26 @@ class DatabaseHelper {
     );
   }
 
-  Future<List<Episode>> getEpisodesForPodcast(int podcastId, {EpisodeSortOrder sortOrder = EpisodeSortOrder.newestFirst}) async {
+  Future<List<Episode>> getEpisodesForPodcast(int podcastId) async {
     final db = await database;
+    final podcast = await getPodcast(podcastId);
+    if (podcast == null) return [];
+
+    final sortOrder = podcast.sortOrder;
     return await _getEpisodesForPodcast(db, podcastId, sortOrder: sortOrder);
+  }
+
+  Future<Episode?> getEpisode(int podcastId, String audioUrl) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'episodes',
+      where: 'podcast_id = ? AND audio_url = ?',
+      whereArgs: [podcastId, audioUrl],
+      limit: 1,
+    );
+
+    if (maps.isEmpty) return null;
+    return _mapToEpisode(maps.first);
   }
 
   Future<void> close() async {

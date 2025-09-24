@@ -31,28 +31,31 @@ void main() {
         rssUrl: 'https://example.com/feed.xml',
         imageUrl: 'https://example.com/image.jpg',
         author: 'Test Author',
-        episodes: [
-          Episode(
-            title: 'Episode 1',
-            description: 'First episode',
-            audioUrl: 'https://example.com/ep1.mp3',
-            pubDate: DateTime(2025, 9, 22, 14, 0, 0),
-            duration: Duration(minutes: 45, seconds: 30),
-            imageUrl: 'https://example.com/ep1.jpg',
-          ),
-          Episode(
-            title: 'Episode 2',
-            description: 'Second episode',
-            audioUrl: 'https://example.com/ep2.mp3',
-            pubDate: DateTime(2025, 9, 24, 10, 30, 0),
-            duration: Duration(hours: 1, minutes: 12, seconds: 45),
-            imageUrl: null,
-          ),
-        ],
         lastFetched: DateTime.now(),
       );
 
+      final episodes = [
+        Episode(
+          title: 'Episode 1',
+          description: 'First episode',
+          audioUrl: 'https://example.com/ep1.mp3',
+          pubDate: DateTime(2025, 9, 22, 14, 0, 0),
+          duration: Duration(minutes: 45, seconds: 30),
+          imageUrl: 'https://example.com/ep1.jpg',
+        ),
+        Episode(
+          title: 'Episode 2',
+          description: 'Second episode',
+          audioUrl: 'https://example.com/ep2.mp3',
+          pubDate: DateTime(2025, 9, 24, 10, 30, 0),
+          duration: Duration(hours: 1, minutes: 12, seconds: 45),
+          imageUrl: null,
+        ),
+      ];
+
       final podcastId = await dbHelper.insertPodcast(podcast);
+      await dbHelper.updatePodcastEpisodes(podcastId, episodes);
+
       expect(podcastId, isNotNull);
       expect(podcastId, greaterThan(0));
 
@@ -63,9 +66,11 @@ void main() {
       expect(retrieved.description, equals('A test podcast for database testing'));
       expect(retrieved.rssUrl, equals('https://example.com/feed.xml'));
       expect(retrieved.author, equals('Test Author'));
-      expect(retrieved.episodes.length, equals(2));
 
-      final ep1 = retrieved.episodes.firstWhere((e) => e.title == 'Episode 1');
+      final retrievedEpisodes = await dbHelper.getEpisodesForPodcast(podcastId);
+      expect(retrievedEpisodes.length, equals(2));
+
+      final ep1 = retrievedEpisodes.firstWhere((e) => e.title == 'Episode 1');
       expect(ep1.description, equals('First episode'));
       expect(ep1.audioUrl, equals('https://example.com/ep1.mp3'));
       expect(ep1.pubDate.year, equals(2025));
@@ -74,7 +79,7 @@ void main() {
       expect(ep1.duration!.inSeconds, equals(2730));
       expect(ep1.imageUrl, equals('https://example.com/ep1.jpg'));
 
-      final ep2 = retrieved.episodes.firstWhere((e) => e.title == 'Episode 2');
+      final ep2 = retrievedEpisodes.firstWhere((e) => e.title == 'Episode 2');
       expect(ep2.imageUrl, isNull);
       expect(ep2.duration!.inSeconds, equals(4365));
     });
@@ -86,51 +91,53 @@ void main() {
         rssUrl: 'https://example.com/feed2.xml',
         imageUrl: null,
         author: 'Original Author',
-        episodes: [
-          Episode(
-            title: 'Episode 1',
-            description: 'First episode',
-            audioUrl: 'https://example.com/ep1.mp3',
-            pubDate: DateTime.now(),
-            duration: null,
-            imageUrl: null,
-          ),
-        ],
         lastFetched: DateTime.now(),
       );
 
       final podcastId = await dbHelper.insertPodcast(podcast);
+      await dbHelper.updatePodcastEpisodes(podcastId, [
+        Episode(
+          title: 'Episode 1',
+          description: 'First episode',
+          audioUrl: 'https://example.com/ep1.mp3',
+          pubDate: DateTime.now(),
+          duration: null,
+          imageUrl: null,
+        ),
+      ]);
 
       final updatedPodcast = podcast.copyWith(
         id: podcastId,
         title: 'Updated Title',
         description: 'Updated description',
-        episodes: [
-          Episode(
-            title: 'Episode 1',
-            description: 'First episode',
-            audioUrl: 'https://example.com/ep1.mp3',
-            pubDate: DateTime.now(),
-            duration: null,
-            imageUrl: null,
-          ),
-          Episode(
-            title: 'Episode 2',
-            description: 'New episode',
-            audioUrl: 'https://example.com/ep2.mp3',
-            pubDate: DateTime.now(),
-            duration: Duration(minutes: 30),
-            imageUrl: null,
-          ),
-        ],
       );
 
       await dbHelper.updatePodcast(updatedPodcast);
+      await dbHelper.updatePodcastEpisodes(podcastId, [
+        Episode(
+          title: 'Episode 1',
+          description: 'First episode',
+          audioUrl: 'https://example.com/ep1.mp3',
+          pubDate: DateTime.now(),
+          duration: null,
+          imageUrl: null,
+        ),
+        Episode(
+          title: 'Episode 2',
+          description: 'New episode',
+          audioUrl: 'https://example.com/ep2.mp3',
+          pubDate: DateTime.now(),
+          duration: Duration(minutes: 30),
+          imageUrl: null,
+        ),
+      ]);
 
       final retrieved = await dbHelper.getPodcast(podcastId);
       expect(retrieved!.title, equals('Updated Title'));
       expect(retrieved.description, equals('Updated description'));
-      expect(retrieved.episodes.length, equals(2));
+
+      final episodes = await dbHelper.getEpisodesForPodcast(podcastId);
+      expect(episodes.length, equals(2));
     });
 
     test('should delete podcast and cascade delete episodes', () async {
@@ -140,80 +147,87 @@ void main() {
         rssUrl: 'https://example.com/delete.xml',
         imageUrl: null,
         author: null,
-        episodes: [
-          Episode(
-            title: 'Episode 1',
-            description: 'Episode',
-            audioUrl: 'https://example.com/ep.mp3',
-            pubDate: DateTime.now(),
-            duration: null,
-            imageUrl: null,
-          ),
-        ],
         lastFetched: DateTime.now(),
       );
 
       final podcastId = await dbHelper.insertPodcast(podcast);
+      await dbHelper.updatePodcastEpisodes(podcastId, [
+        Episode(
+          title: 'Episode 1',
+          description: 'Episode',
+          audioUrl: 'https://example.com/ep.mp3',
+          pubDate: DateTime.now(),
+          duration: null,
+          imageUrl: null,
+        ),
+      ]);
 
       var retrieved = await dbHelper.getPodcast(podcastId);
       expect(retrieved, isNotNull);
-      expect(retrieved!.episodes.length, equals(1));
+
+      var episodes = await dbHelper.getEpisodesForPodcast(podcastId);
+      expect(episodes.length, equals(1));
 
       await dbHelper.deletePodcast(podcastId);
 
       retrieved = await dbHelper.getPodcast(podcastId);
       expect(retrieved, isNull);
+
+      episodes = await dbHelper.getEpisodesForPodcast(podcastId);
+      expect(episodes.length, equals(0));
     });
 
-    test('should retrieve all podcasts with episodes', () async {
+    test('should retrieve all podcasts', () async {
       final podcast1 = Podcast(
         title: 'Podcast 1',
         description: 'First podcast',
         rssUrl: 'https://example.com/feed1.xml',
         imageUrl: null,
         author: null,
-        episodes: [
-          Episode(
-            title: 'Episode 1',
-            description: 'Episode',
-            audioUrl: 'https://example.com/ep1.mp3',
-            pubDate: DateTime.now(),
-            duration: null,
-            imageUrl: null,
-          ),
-        ],
         lastFetched: DateTime.now(),
       );
 
       final podcast2 = Podcast(
         title: 'Podcast 2',
         description: 'Second podcast',
-        rssUrl: 'https://example.com/feed2.xml',
+        rssUrl: 'https://example.com/feed2b.xml',
         imageUrl: null,
         author: null,
-        episodes: [
-          Episode(
-            title: 'Episode 1',
-            description: 'Episode',
-            audioUrl: 'https://example.com/ep1.mp3',
-            pubDate: DateTime.now(),
-            duration: null,
-            imageUrl: null,
-          ),
-          Episode(
-            title: 'Episode 2',
-            description: 'Episode',
-            audioUrl: 'https://example.com/ep2.mp3',
-            pubDate: DateTime.now(),
-            duration: null,
-            imageUrl: null,
-          ),
-        ],
         lastFetched: DateTime.now(),
       );
 
-      await dbHelper.insertPodcast(podcast1);
-      await dbHelper.insertPodcast(podcast2);
+      final id1 = await dbHelper.insertPodcast(podcast1);
+      final id2 = await dbHelper.insertPodcast(podcast2);
+
+      await dbHelper.updatePodcastEpisodes(id1, [
+        Episode(
+          title: 'Episode 1',
+          description: 'Episode',
+          audioUrl: 'https://example.com/ep1.mp3',
+          pubDate: DateTime.now(),
+          duration: null,
+          imageUrl: null,
+        ),
+      ]);
+
+      await dbHelper.updatePodcastEpisodes(id2, [
+        Episode(
+          title: 'Episode 1',
+          description: 'Episode',
+          audioUrl: 'https://example.com/ep1.mp3',
+          pubDate: DateTime.now(),
+          duration: null,
+          imageUrl: null,
+        ),
+        Episode(
+          title: 'Episode 2',
+          description: 'Episode',
+          audioUrl: 'https://example.com/ep2.mp3',
+          pubDate: DateTime.now(),
+          duration: null,
+          imageUrl: null,
+        ),
+      ]);
 
       final allPodcasts = await dbHelper.getAllPodcasts();
       expect(allPodcasts.length, greaterThanOrEqualTo(2));
@@ -221,8 +235,11 @@ void main() {
       final retrievedPodcast1 = allPodcasts.firstWhere((p) => p.title == 'Podcast 1');
       final retrievedPodcast2 = allPodcasts.firstWhere((p) => p.title == 'Podcast 2');
 
-      expect(retrievedPodcast1.episodes.length, equals(1));
-      expect(retrievedPodcast2.episodes.length, equals(2));
+      final episodes1 = await dbHelper.getEpisodesForPodcast(retrievedPodcast1.id!);
+      final episodes2 = await dbHelper.getEpisodesForPodcast(retrievedPodcast2.id!);
+
+      expect(episodes1.length, equals(1));
+      expect(episodes2.length, equals(2));
     });
 
     test('should retrieve podcast by RSS URL', () async {
@@ -232,7 +249,6 @@ void main() {
         rssUrl: 'https://example.com/unique-feed.xml',
         imageUrl: null,
         author: null,
-        episodes: [],
         lastFetched: DateTime.now(),
       );
 
@@ -253,7 +269,6 @@ void main() {
         rssUrl: 'https://example.com/same-feed.xml',
         imageUrl: null,
         author: null,
-        episodes: [],
         lastFetched: DateTime.now(),
       );
 
@@ -263,7 +278,6 @@ void main() {
         rssUrl: 'https://example.com/same-feed.xml',
         imageUrl: null,
         author: null,
-        episodes: [],
         lastFetched: DateTime.now(),
       );
 
@@ -280,37 +294,41 @@ void main() {
         title: 'Sort Order Test',
         description: 'Testing default sort order',
         rssUrl: 'https://example.com/sort-test.xml',
-        episodes: [
-          Episode(
-            title: 'Episode 1',
-            description: 'Oldest episode',
-            audioUrl: 'https://example.com/ep1.mp3',
-            pubDate: DateTime(2025, 9, 20),
-          ),
-          Episode(
-            title: 'Episode 2',
-            description: 'Newest episode',
-            audioUrl: 'https://example.com/ep2.mp3',
-            pubDate: DateTime(2025, 9, 23),
-          ),
-          Episode(
-            title: 'Episode 3',
-            description: 'Middle episode',
-            audioUrl: 'https://example.com/ep3.mp3',
-            pubDate: DateTime(2025, 9, 21),
-          ),
-        ],
       );
 
-      final podcastId = await dbHelper.insertPodcast(podcast);
-      final retrieved = await dbHelper.getPodcast(podcastId);
+      final episodes = [
+        Episode(
+          title: 'Episode 1',
+          description: 'Oldest episode',
+          audioUrl: 'https://example.com/ep1.mp3',
+          pubDate: DateTime(2025, 9, 20),
+        ),
+        Episode(
+          title: 'Episode 2',
+          description: 'Newest episode',
+          audioUrl: 'https://example.com/ep2.mp3',
+          pubDate: DateTime(2025, 9, 23),
+        ),
+        Episode(
+          title: 'Episode 3',
+          description: 'Middle episode',
+          audioUrl: 'https://example.com/ep3.mp3',
+          pubDate: DateTime(2025, 9, 21),
+        ),
+      ];
 
+      final podcastId = await dbHelper.insertPodcast(podcast);
+      await dbHelper.updatePodcastEpisodes(podcastId, episodes);
+
+      final retrieved = await dbHelper.getPodcast(podcastId);
       expect(retrieved, isNotNull);
       expect(retrieved!.sortOrder, equals(EpisodeSortOrder.newestFirst));
-      expect(retrieved.episodes.length, equals(3));
-      expect(retrieved.episodes[0].title, equals('Episode 2'));
-      expect(retrieved.episodes[1].title, equals('Episode 3'));
-      expect(retrieved.episodes[2].title, equals('Episode 1'));
+
+      final retrievedEpisodes = await dbHelper.getEpisodesForPodcast(podcastId);
+      expect(retrievedEpisodes.length, equals(3));
+      expect(retrievedEpisodes[0].title, equals('Episode 2'));
+      expect(retrievedEpisodes[1].title, equals('Episode 3'));
+      expect(retrievedEpisodes[2].title, equals('Episode 1'));
     });
 
     test('should sort episodes oldest first when configured', () async {
@@ -319,37 +337,41 @@ void main() {
         description: 'Testing oldest first sort order',
         rssUrl: 'https://example.com/oldest-first.xml',
         sortOrder: EpisodeSortOrder.oldestFirst,
-        episodes: [
-          Episode(
-            title: 'Episode 1',
-            description: 'Oldest episode',
-            audioUrl: 'https://example.com/ep1.mp3',
-            pubDate: DateTime(2025, 9, 20),
-          ),
-          Episode(
-            title: 'Episode 2',
-            description: 'Newest episode',
-            audioUrl: 'https://example.com/ep2.mp3',
-            pubDate: DateTime(2025, 9, 23),
-          ),
-          Episode(
-            title: 'Episode 3',
-            description: 'Middle episode',
-            audioUrl: 'https://example.com/ep3.mp3',
-            pubDate: DateTime(2025, 9, 21),
-          ),
-        ],
       );
 
-      final podcastId = await dbHelper.insertPodcast(podcast);
-      final retrieved = await dbHelper.getPodcast(podcastId);
+      final episodes = [
+        Episode(
+          title: 'Episode 1',
+          description: 'Oldest episode',
+          audioUrl: 'https://example.com/ep1.mp3',
+          pubDate: DateTime(2025, 9, 20),
+        ),
+        Episode(
+          title: 'Episode 2',
+          description: 'Newest episode',
+          audioUrl: 'https://example.com/ep2.mp3',
+          pubDate: DateTime(2025, 9, 23),
+        ),
+        Episode(
+          title: 'Episode 3',
+          description: 'Middle episode',
+          audioUrl: 'https://example.com/ep3.mp3',
+          pubDate: DateTime(2025, 9, 21),
+        ),
+      ];
 
+      final podcastId = await dbHelper.insertPodcast(podcast);
+      await dbHelper.updatePodcastEpisodes(podcastId, episodes);
+
+      final retrieved = await dbHelper.getPodcast(podcastId);
       expect(retrieved, isNotNull);
       expect(retrieved!.sortOrder, equals(EpisodeSortOrder.oldestFirst));
-      expect(retrieved.episodes.length, equals(3));
-      expect(retrieved.episodes[0].title, equals('Episode 1'));
-      expect(retrieved.episodes[1].title, equals('Episode 3'));
-      expect(retrieved.episodes[2].title, equals('Episode 2'));
+
+      final retrievedEpisodes = await dbHelper.getEpisodesForPodcast(podcastId);
+      expect(retrievedEpisodes.length, equals(3));
+      expect(retrievedEpisodes[0].title, equals('Episode 1'));
+      expect(retrievedEpisodes[1].title, equals('Episode 3'));
+      expect(retrievedEpisodes[2].title, equals('Episode 2'));
     });
 
     test('should update podcast sort order', () async {
@@ -357,26 +379,31 @@ void main() {
         title: 'Update Sort Order Test',
         description: 'Testing sort order updates',
         rssUrl: 'https://example.com/update-sort.xml',
-        episodes: [
-          Episode(
-            title: 'Episode 1',
-            description: 'Oldest episode',
-            audioUrl: 'https://example.com/ep1.mp3',
-            pubDate: DateTime(2025, 9, 20),
-          ),
-          Episode(
-            title: 'Episode 2',
-            description: 'Newest episode',
-            audioUrl: 'https://example.com/ep2.mp3',
-            pubDate: DateTime(2025, 9, 23),
-          ),
-        ],
       );
 
+      final episodes = [
+        Episode(
+          title: 'Episode 1',
+          description: 'Oldest episode',
+          audioUrl: 'https://example.com/ep1.mp3',
+          pubDate: DateTime(2025, 9, 20),
+        ),
+        Episode(
+          title: 'Episode 2',
+          description: 'Newest episode',
+          audioUrl: 'https://example.com/ep2.mp3',
+          pubDate: DateTime(2025, 9, 23),
+        ),
+      ];
+
       final podcastId = await dbHelper.insertPodcast(podcast);
+      await dbHelper.updatePodcastEpisodes(podcastId, episodes);
+
       var retrieved = await dbHelper.getPodcast(podcastId);
       expect(retrieved!.sortOrder, equals(EpisodeSortOrder.newestFirst));
-      expect(retrieved.episodes[0].title, equals('Episode 2'));
+
+      var retrievedEpisodes = await dbHelper.getEpisodesForPodcast(podcastId);
+      expect(retrievedEpisodes[0].title, equals('Episode 2'));
 
       final updatedPodcast = retrieved.copyWith(
         sortOrder: EpisodeSortOrder.oldestFirst,
@@ -385,7 +412,9 @@ void main() {
 
       retrieved = await dbHelper.getPodcast(podcastId);
       expect(retrieved!.sortOrder, equals(EpisodeSortOrder.oldestFirst));
-      expect(retrieved.episodes[0].title, equals('Episode 1'));
+
+      retrievedEpisodes = await dbHelper.getEpisodesForPodcast(podcastId);
+      expect(retrievedEpisodes[0].title, equals('Episode 1'));
     });
   });
 }
