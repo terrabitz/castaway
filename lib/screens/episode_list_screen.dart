@@ -21,21 +21,18 @@ class EpisodeListScreen extends StatefulWidget {
 
 class _EpisodeListScreenState extends State<EpisodeListScreen> {
   final DatabaseHelper _dbHelper = DatabaseHelper();
-  Podcast? _podcast;
+  late Podcast _podcast;
   List<Episode> _episodes = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _podcast = widget.podcast;
     _loadPodcastData();
   }
 
   Future<void> _loadPodcastData() async {
-    setState(() {
-      _isLoading = true;
-    });
-
     final podcast = await _dbHelper.getPodcast(widget.podcast.id!);
     if (podcast != null) {
       final episodes = await _dbHelper.getEpisodesForPodcast(podcast.id!);
@@ -52,42 +49,16 @@ class _EpisodeListScreenState extends State<EpisodeListScreen> {
   }
 
   void _updateSortOrder(EpisodeSortOrder newSortOrder) async {
-    if (_podcast == null) return;
-
-    final updatedPodcast = _podcast!.copyWith(sortOrder: newSortOrder);
+    final updatedPodcast = _podcast.copyWith(sortOrder: newSortOrder);
     await _dbHelper.updatePodcast(updatedPodcast);
     await _loadPodcastData();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(widget.podcast.title),
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        ),
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
-    if (_podcast == null) {
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(widget.podcast.title),
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        ),
-        body: Center(
-          child: Text('Podcast not found'),
-        ),
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(
-        title: Text(_podcast!.title),
+        title: Text(_podcast.title),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           PopupMenuButton<EpisodeSortOrder>(
@@ -98,7 +69,7 @@ class _EpisodeListScreenState extends State<EpisodeListScreen> {
                 value: EpisodeSortOrder.newestFirst,
                 child: Row(
                   children: [
-                    if (_podcast!.sortOrder == EpisodeSortOrder.newestFirst)
+                    if (_podcast.sortOrder == EpisodeSortOrder.newestFirst)
                       Icon(Icons.check, size: 20)
                     else
                       SizedBox(width: 20),
@@ -111,7 +82,7 @@ class _EpisodeListScreenState extends State<EpisodeListScreen> {
                 value: EpisodeSortOrder.oldestFirst,
                 child: Row(
                   children: [
-                    if (_podcast!.sortOrder == EpisodeSortOrder.oldestFirst)
+                    if (_podcast.sortOrder == EpisodeSortOrder.oldestFirst)
                       Icon(Icons.check, size: 20)
                     else
                       SizedBox(width: 20),
@@ -133,7 +104,7 @@ class _EpisodeListScreenState extends State<EpisodeListScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 PodcastImage(
-                  imageUrl: _podcast!.imageUrl,
+                  imageUrl: _podcast.imageUrl,
                   width: 80,
                   height: 80,
                   fit: BoxFit.cover,
@@ -146,15 +117,15 @@ class _EpisodeListScreenState extends State<EpisodeListScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _podcast!.title,
+                        _podcast.title,
                         style: Theme.of(context).textTheme.titleLarge,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (_podcast!.author != null) ...[
+                      if (_podcast.author != null) ...[
                         SizedBox(height: 4),
                         Text(
-                          _podcast!.author!,
+                          _podcast.author!,
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Colors.grey.shade600,
                           ),
@@ -176,34 +147,38 @@ class _EpisodeListScreenState extends State<EpisodeListScreen> {
           Divider(),
           // Episodes list
           Expanded(
-            child: _episodes.isEmpty
+            child: _isLoading
               ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.playlist_play,
-                        size: 64,
-                        color: Colors.grey,
-                      ),
-                      SizedBox(height: 16),
-                      Text(
-                        'No episodes available',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ],
-                  ),
+                  child: CircularProgressIndicator(),
                 )
-              : ListView.builder(
-                  itemCount: _episodes.length,
-                  itemBuilder: (context, index) {
-                    final episode = _episodes[index];
-                    return EpisodeTile(
-                      episode: episode,
-                      podcast: _podcast!,
-                    );
-                  },
-                ),
+              : _episodes.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.playlist_play,
+                          size: 64,
+                          color: Colors.grey,
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          'No episodes available',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: _episodes.length,
+                    itemBuilder: (context, index) {
+                      final episode = _episodes[index];
+                      return EpisodeTile(
+                        episode: episode,
+                        podcast: _podcast,
+                      );
+                    },
+                  ),
           ),
         ],
       ),
