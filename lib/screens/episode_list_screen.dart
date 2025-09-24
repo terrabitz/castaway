@@ -273,13 +273,16 @@ class _PodcastDescriptionState extends State<PodcastDescription> {
                       "body": Style(
                         margin: Margins.zero,
                         padding: HtmlPaddings.zero,
-                        textAlign: TextAlign.justify,
+                        textAlign: TextAlign.left,
                         color: Colors.grey.shade700,
                         fontSize: FontSize(Theme.of(context).textTheme.bodyMedium?.fontSize ?? 14),
                       ),
                       "p": Style(
                         margin: Margins.only(bottom: 4),
-                        textAlign: TextAlign.justify,
+                        textAlign: TextAlign.left,
+                      ),
+                      "hr": Style(
+                        margin: Margins.symmetric(vertical: 8),
                       ),
                     },
                   ),
