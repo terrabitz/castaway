@@ -22,9 +22,6 @@ class _EpisodeListScreenState extends State<EpisodeListScreen> {
   late Podcast _podcast;
   List<Episode> _episodes = [];
   bool _isLoading = true;
-  bool _isDescriptionExpanded = false;
-  bool _showReadMore = false;
-  final GlobalKey _descriptionKey = GlobalKey();
 
   @override
   void initState() {
@@ -34,8 +31,6 @@ class _EpisodeListScreenState extends State<EpisodeListScreen> {
   }
 
   Future<void> _loadPodcastData() async {
-    _checkDescriptionOverflow();
-    
     final podcast = await _dbHelper.getPodcast(widget.podcast.id!);
     if (podcast != null) {
       final episodes = await _dbHelper.getEpisodesForPodcast(podcast.id!);
@@ -49,24 +44,6 @@ class _EpisodeListScreenState extends State<EpisodeListScreen> {
         _isLoading = false;
       });
     }
-  }
-
-  void _checkDescriptionOverflow() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final context = _descriptionKey.currentContext;
-      if (context != null && mounted) {
-        final renderBox = context.findRenderObject() as RenderBox?;
-        if (renderBox != null) {
-          final maxHeight = 72.0;
-          final actualHeight = renderBox.size.height;
-          if (actualHeight > maxHeight && !_showReadMore) {
-            setState(() {
-              _showReadMore = true;
-            });
-          }
-        }
-      }
-    });
   }
 
   void _updateSortOrder(EpisodeSortOrder newSortOrder) async {
@@ -126,74 +103,7 @@ class _EpisodeListScreenState extends State<EpisodeListScreen> {
                             ],
                             if (_podcast.description.isNotEmpty) ...[
                               SizedBox(height: 12),
-                              Column(
-                                children: [
-                                  Stack(
-                                    children: [
-                                      ClipRect(
-                                        child: Container(
-                                          constraints: BoxConstraints(
-                                            maxHeight: _isDescriptionExpanded ? double.infinity : 72,
-                                          ),
-                                          child: SingleChildScrollView(
-                                            physics: NeverScrollableScrollPhysics(),
-                                            child: Html(
-                                              key: _descriptionKey,
-                                              data: _podcast.description,
-                                              style: {
-                                                "body": Style(
-                                                  margin: Margins.zero,
-                                                  padding: HtmlPaddings.zero,
-                                                  textAlign: TextAlign.justify,
-                                                  color: Colors.grey.shade700,
-                                                  fontSize: FontSize(Theme.of(context).textTheme.bodyMedium?.fontSize ?? 14),
-                                                ),
-                                                "p": Style(
-                                                  margin: Margins.only(bottom: 4),
-                                                  textAlign: TextAlign.justify,
-                                                ),
-                                              },
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      if (_showReadMore && !_isDescriptionExpanded)
-                                        Positioned(
-                                          bottom: 0,
-                                          left: 0,
-                                          right: 0,
-                                          height: 24,
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              gradient: LinearGradient(
-                                                begin: Alignment.topCenter,
-                                                end: Alignment.bottomCenter,
-                                                colors: [
-                                                  Colors.transparent,
-                                                  Theme.of(context).scaffoldBackgroundColor,
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                  if (_showReadMore)
-                                    TextButton(
-                                      onPressed: () {
-                                        setState(() {
-                                          _isDescriptionExpanded = !_isDescriptionExpanded;
-                                        });
-                                      },
-                                      child: Text(
-                                        _isDescriptionExpanded ? 'Read less' : 'Read more',
-                                        style: TextStyle(
-                                          color: Theme.of(context).colorScheme.primary,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
+                              PodcastDescription(description: _podcast.description),
                             ],
                             SizedBox(height: 8),
                             Text(
@@ -297,6 +207,117 @@ class _EpisodeListScreenState extends State<EpisodeListScreen> {
         ],
       ),
       bottomNavigationBar: MiniPlayer(),
+    );
+  }
+}
+
+class PodcastDescription extends StatefulWidget {
+  final String description;
+
+  const PodcastDescription({super.key, required this.description});
+
+  @override
+  State<PodcastDescription> createState() => _PodcastDescriptionState();
+}
+
+class _PodcastDescriptionState extends State<PodcastDescription> {
+  bool _isExpanded = false;
+  bool _showReadMore = false;
+  final GlobalKey _descriptionKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    _checkOverflow();
+  }
+
+  void _checkOverflow() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = _descriptionKey.currentContext;
+      if (context != null && mounted) {
+        final renderBox = context.findRenderObject() as RenderBox?;
+        if (renderBox != null) {
+          final maxHeight = 72.0;
+          final actualHeight = renderBox.size.height;
+          if (actualHeight > maxHeight && !_showReadMore) {
+            setState(() {
+              _showReadMore = true;
+            });
+          }
+        }
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Stack(
+          children: [
+            ClipRect(
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: _isExpanded ? double.infinity : 72,
+                ),
+                child: SingleChildScrollView(
+                  physics: NeverScrollableScrollPhysics(),
+                  child: Html(
+                    key: _descriptionKey,
+                    data: widget.description,
+                    style: {
+                      "body": Style(
+                        margin: Margins.zero,
+                        padding: HtmlPaddings.zero,
+                        textAlign: TextAlign.justify,
+                        color: Colors.grey.shade700,
+                        fontSize: FontSize(Theme.of(context).textTheme.bodyMedium?.fontSize ?? 14),
+                      ),
+                      "p": Style(
+                        margin: Margins.only(bottom: 4),
+                        textAlign: TextAlign.justify,
+                      ),
+                    },
+                  ),
+                ),
+              ),
+            ),
+            if (_showReadMore && !_isExpanded)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: 24,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Theme.of(context).scaffoldBackgroundColor,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        if (_showReadMore)
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+            },
+            child: Text(
+              _isExpanded ? 'Read less' : 'Read more',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
