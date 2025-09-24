@@ -28,6 +28,8 @@ class PodcastImage extends StatelessWidget {
         imageUrl: imageUrl!,
         width: width,
         height: height,
+        maxWidthDiskCache: 300,
+        maxHeightDiskCache: 300,
         fit: fit,
         placeholder: (context, url) => _buildPlaceholder(context),
         errorWidget: (context, url, error) => _buildPlaceholder(context),
