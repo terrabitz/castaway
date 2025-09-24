@@ -128,32 +128,55 @@ class _EpisodeListScreenState extends State<EpisodeListScreen> {
                               SizedBox(height: 12),
                               Column(
                                 children: [
-                                  ClipRect(
-                                    child: Container(
-                                      constraints: BoxConstraints(
-                                        maxHeight: _isDescriptionExpanded ? double.infinity : 72,
-                                      ),
-                                      child: SingleChildScrollView(
-                                        physics: NeverScrollableScrollPhysics(),
-                                        child: Html(
-                                          key: _descriptionKey,
-                                          data: _podcast.description,
-                                          style: {
-                                            "body": Style(
-                                              margin: Margins.zero,
-                                              padding: HtmlPaddings.zero,
-                                              textAlign: TextAlign.justify,
-                                              color: Colors.grey.shade700,
-                                              fontSize: FontSize(Theme.of(context).textTheme.bodyMedium?.fontSize ?? 14),
+                                  Stack(
+                                    children: [
+                                      ClipRect(
+                                        child: Container(
+                                          constraints: BoxConstraints(
+                                            maxHeight: _isDescriptionExpanded ? double.infinity : 72,
+                                          ),
+                                          child: SingleChildScrollView(
+                                            physics: NeverScrollableScrollPhysics(),
+                                            child: Html(
+                                              key: _descriptionKey,
+                                              data: _podcast.description,
+                                              style: {
+                                                "body": Style(
+                                                  margin: Margins.zero,
+                                                  padding: HtmlPaddings.zero,
+                                                  textAlign: TextAlign.justify,
+                                                  color: Colors.grey.shade700,
+                                                  fontSize: FontSize(Theme.of(context).textTheme.bodyMedium?.fontSize ?? 14),
+                                                ),
+                                                "p": Style(
+                                                  margin: Margins.only(bottom: 4),
+                                                  textAlign: TextAlign.justify,
+                                                ),
+                                              },
                                             ),
-                                            "p": Style(
-                                              margin: Margins.only(bottom: 4),
-                                              textAlign: TextAlign.justify,
-                                            ),
-                                          },
+                                          ),
                                         ),
                                       ),
-                                    ),
+                                      if (_showReadMore && !_isDescriptionExpanded)
+                                        Positioned(
+                                          bottom: 0,
+                                          left: 0,
+                                          right: 0,
+                                          height: 24,
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                begin: Alignment.topCenter,
+                                                end: Alignment.bottomCenter,
+                                                colors: [
+                                                  Colors.transparent,
+                                                  Theme.of(context).scaffoldBackgroundColor,
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                   if (_showReadMore)
                                     TextButton(
