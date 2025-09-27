@@ -1,3 +1,4 @@
+import "dart:convert";
 import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart';
 import 'package:intl/intl.dart';
@@ -45,8 +46,10 @@ class PodcastService {
       if (response.statusCode != 200) {
         throw Exception('Failed to load RSS feed: ${response.statusCode}');
       }
-
-      final podcast = parseRss(response.body, rssUrl);
+      
+      final String xmlBody = utf8.decode(response.bodyBytes);
+      
+      final podcast = parseRss(xmlBody, rssUrl);
 
       final existing = await _dbHelper.getPodcastByRssUrl(rssUrl);
       if (existing != null) {
