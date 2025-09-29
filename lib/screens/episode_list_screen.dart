@@ -7,6 +7,7 @@ import '../widgets/mini_player.dart';
 import '../widgets/podcast_image.dart';
 import '../database/database_helper.dart';
 import 'episode_detail_screen.dart';
+import 'full_player_screen.dart';
 
 class EpisodeListScreen extends StatefulWidget {
   final Podcast podcast;
@@ -455,8 +456,17 @@ class EpisodeTile extends StatelessWidget {
             isLoading: isLoading,
             onPressed: isLoading
                 ? null
-                : () {
-                    audioService.playEpisode(episode, podcast);
+                : () async {
+                    if (context.mounted) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => FullPlayerScreen(),
+                        ),
+                      );
+                    }
+                    await audioService.playEpisode(episode, podcast);
+                    
                   },
           );
         },
