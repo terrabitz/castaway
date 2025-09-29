@@ -3,6 +3,8 @@ import 'package:just_audio/just_audio.dart';
 import 'package:audio_session/audio_session.dart';
 import '../models/podcast.dart';
 import 'audio_handler.dart';
+import '../database/database_helper.dart';
+import 'dart:async';
 
 enum PlayerState { stopped, playing, paused, loading, buffering }
 
@@ -12,6 +14,7 @@ class AudioPlayerService extends ChangeNotifier {
   AudioPlayerService._internal();
 
   AudioPlayerHandler? _audioHandler;
+  final DatabaseHelper _dbHelper = DatabaseHelper();
 
   final AudioPlayer _player = AudioPlayer();
   AudioPlayer get player => _player;
@@ -20,6 +23,7 @@ class AudioPlayerService extends ChangeNotifier {
   PlayerState _playerState = PlayerState.stopped;
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
+  Timer? _progressSaveTimer;
 
   // Getters
   Episode? get currentEpisode => _currentEpisode;
@@ -68,6 +72,7 @@ class AudioPlayerService extends ChangeNotifier {
         case ProcessingState.completed:
           _playerState = PlayerState.stopped;
           _position = Duration.zero;
+          _onEpisodeCompleted();
         case ProcessingState.idle:
           _playerState = PlayerState.stopped;
       }
@@ -78,6 +83,7 @@ class AudioPlayerService extends ChangeNotifier {
     _player.positionStream.listen((position) {
       _position = position;
       notifyListeners();
+      _saveProgressPeriodically();
     });
 
     // Listen to duration changes
@@ -87,7 +93,7 @@ class AudioPlayerService extends ChangeNotifier {
     });
   }
 
-  Future<void> playEpisode(Episode episode, Podcast podcast) async {
+  Future<void> playEpisode(Episode episode, Podcast podcast, {bool resumeFromProgress = true}) async {
     try {
       _playerState = PlayerState.loading;
       _currentEpisode = episode;
@@ -102,6 +108,12 @@ class AudioPlayerService extends ChangeNotifier {
       );
 
       await _player.setUrl(episode.audioUrl);
+
+      // Resume from saved progress if enabled and episode isn't finished
+      if (resumeFromProgress && podcast.id != null && !episode.isFinished && episode.progressSeconds > 0) {
+        await _player.seek(Duration(seconds: episode.progressSeconds));
+      }
+
       await _player.play();
     } on PlayerInterruptedException catch (e) {
       // This call was interrupted since another audio source was loaded or the
@@ -137,6 +149,19 @@ class AudioPlayerService extends ChangeNotifier {
 
   Future<void> seekTo(Duration position) async {
     await _player.seek(position);
+    // Immediately save progress when seeking
+    if (_currentEpisode != null && _currentPodcast?.id != null) {
+      try {
+        await _dbHelper.updateEpisodeProgressAndCheckCompletion(
+          _currentPodcast!.id!,
+          _currentEpisode!.audioUrl,
+          position.inSeconds,
+          _duration.inSeconds > 0 ? _duration.inSeconds : null,
+        );
+      } catch (e) {
+        print('Error saving progress after seeking: $e');
+      }
+    }
   }
 
   Future<void> skipForward([Duration duration = const Duration(seconds: 30)]) async {
@@ -174,8 +199,47 @@ class AudioPlayerService extends ChangeNotifier {
     }
   }
 
+  void _saveProgressPeriodically() {
+    // Cancel existing timer
+    _progressSaveTimer?.cancel();
+
+    // Set up a new timer to save progress after 2 seconds of inactivity
+    _progressSaveTimer = Timer(const Duration(seconds: 2), () {
+      _saveProgress();
+    });
+  }
+
+  Future<void> _saveProgress() async {
+    if (_currentEpisode == null || _currentPodcast?.id == null) return;
+
+    try {
+      await _dbHelper.updateEpisodeProgressAndCheckCompletion(
+        _currentPodcast!.id!,
+        _currentEpisode!.audioUrl,
+        _position.inSeconds,
+        _duration.inSeconds > 0 ? _duration.inSeconds : null,
+      );
+    } catch (e) {
+      print('Error saving episode progress: $e');
+    }
+  }
+
+  Future<void> _onEpisodeCompleted() async {
+    if (_currentEpisode == null || _currentPodcast?.id == null) return;
+
+    try {
+      await _dbHelper.markEpisodeFinished(
+        _currentPodcast!.id!,
+        _currentEpisode!.audioUrl,
+      );
+    } catch (e) {
+      print('Error marking episode as finished: $e');
+    }
+  }
+
   @override
   void dispose() {
+    _progressSaveTimer?.cancel();
     _player.dispose();
     super.dispose();
   }

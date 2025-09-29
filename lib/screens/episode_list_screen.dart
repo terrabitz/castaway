@@ -329,6 +329,76 @@ class _PodcastDescriptionState extends State<PodcastDescription> {
   }
 }
 
+class CircularProgressPlayButton extends StatelessWidget {
+  final double progress;
+  final bool isLoading;
+  final VoidCallback? onPressed;
+  final double size;
+
+  const CircularProgressPlayButton({
+    super.key,
+    required this.progress,
+    required this.isLoading,
+    this.onPressed,
+    this.size = 48.0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Progress circle
+          SizedBox(
+            width: size,
+            height: size,
+            child: CircularProgressIndicator(
+              value: progress,
+              strokeWidth: 3,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+              ),
+            ),
+          ),
+          // Loading indicator
+          if (isLoading)
+            SizedBox(
+              width: size * 0.6,
+              height: size * 0.6,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            )
+          else
+            // Play button
+            GestureDetector(
+              onTap: onPressed,
+              child: Container(
+                width: size * 0.7,
+                height: size * 0.7,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                child: Icon(
+                  Icons.play_arrow,
+                  color: Colors.white,
+                  size: size * 0.4,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class EpisodeTile extends StatelessWidget {
   final Episode episode;
   final Podcast podcast;
@@ -380,19 +450,9 @@ class EpisodeTile extends StatelessWidget {
           final isCurrentEpisode = audioService.currentEpisode == episode;
           final isLoading = isCurrentEpisode && audioService.isLoading;
 
-          return IconButton(
-            icon: isLoading
-                ? SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                  )
-                : Icon(Icons.play_arrow),
+          return CircularProgressPlayButton(
+            progress: 1.0 - episode.progressPercentage,
+            isLoading: isLoading,
             onPressed: isLoading
                 ? null
                 : () {

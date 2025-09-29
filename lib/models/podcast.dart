@@ -110,6 +110,8 @@ class Episode {
   final DateTime pubDate;
   final Duration? duration;
   final String? imageUrl;
+  final int progressSeconds;
+  final DateTime? finishedAt;
 
   Episode({
     required this.title,
@@ -118,6 +120,8 @@ class Episode {
     required this.pubDate,
     this.duration,
     this.imageUrl,
+    this.progressSeconds = 0,
+    this.finishedAt,
   });
 
   Map<String, dynamic> toJson() {
@@ -128,6 +132,8 @@ class Episode {
       'pubDate': pubDate.millisecondsSinceEpoch,
       'duration': duration?.inSeconds,
       'imageUrl': imageUrl,
+      'progressSeconds': progressSeconds,
+      'finishedAt': finishedAt?.millisecondsSinceEpoch,
     };
   }
 
@@ -141,6 +147,10 @@ class Episode {
           ? Duration(seconds: json['duration'])
           : null,
       imageUrl: json['imageUrl'],
+      progressSeconds: json['progressSeconds'] ?? 0,
+      finishedAt: json['finishedAt'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(json['finishedAt'])
+          : null,
     );
   }
 
@@ -162,5 +172,46 @@ class Episode {
     final month = pubDate.month.toString().padLeft(2, '0');
     final day = pubDate.day.toString().padLeft(2, '0');
     return '$year-$month-$day';
+  }
+
+  bool get isFinished => finishedAt != null;
+
+  double get progressPercentage {
+    if (duration == null || duration!.inSeconds == 0) return 0.0;
+    return (progressSeconds / duration!.inSeconds).clamp(0.0, 1.0);
+  }
+
+  String get formattedProgress {
+    final hours = progressSeconds ~/ 3600;
+    final minutes = (progressSeconds % 3600) ~/ 60;
+    final seconds = progressSeconds % 60;
+
+    if (hours > 0) {
+      return '$hours:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    } else {
+      return '$minutes:${seconds.toString().padLeft(2, '0')}';
+    }
+  }
+
+  Episode copyWith({
+    String? title,
+    String? description,
+    String? audioUrl,
+    DateTime? pubDate,
+    Duration? duration,
+    String? imageUrl,
+    int? progressSeconds,
+    DateTime? finishedAt,
+  }) {
+    return Episode(
+      title: title ?? this.title,
+      description: description ?? this.description,
+      audioUrl: audioUrl ?? this.audioUrl,
+      pubDate: pubDate ?? this.pubDate,
+      duration: duration ?? this.duration,
+      imageUrl: imageUrl ?? this.imageUrl,
+      progressSeconds: progressSeconds ?? this.progressSeconds,
+      finishedAt: finishedAt ?? this.finishedAt,
+    );
   }
 }

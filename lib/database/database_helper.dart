@@ -50,6 +50,8 @@ class DatabaseHelper {
         pub_date INTEGER NOT NULL,
         duration_seconds INTEGER,
         image_url TEXT,
+        progress_seconds INTEGER NOT NULL DEFAULT 0,
+        finished_at INTEGER,
         FOREIGN KEY (podcast_id) REFERENCES podcasts (id) ON DELETE CASCADE
       )
     ''');
@@ -214,6 +216,8 @@ class DatabaseHelper {
       'pub_date': episode.pubDate.millisecondsSinceEpoch,
       'duration_seconds': episode.duration?.inSeconds,
       'image_url': episode.imageUrl,
+      'progress_seconds': episode.progressSeconds,
+      'finished_at': episode.finishedAt?.millisecondsSinceEpoch,
     });
   }
 
@@ -227,6 +231,10 @@ class DatabaseHelper {
           ? Duration(seconds: map['duration_seconds'])
           : null,
       imageUrl: map['image_url'],
+      progressSeconds: map['progress_seconds'] ?? 0,
+      finishedAt: map['finished_at'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['finished_at'])
+          : null,
     );
   }
 
@@ -250,6 +258,66 @@ class DatabaseHelper {
 
     if (maps.isEmpty) return null;
     return _mapToEpisode(maps.first);
+  }
+
+  Future<void> updateEpisodeProgress(int podcastId, String audioUrl, int progressSeconds) async {
+    final db = await database;
+    await db.update(
+      'episodes',
+      {'progress_seconds': progressSeconds},
+      where: 'podcast_id = ? AND audio_url = ?',
+      whereArgs: [podcastId, audioUrl],
+    );
+  }
+
+  Future<void> markEpisodeFinished(int podcastId, String audioUrl) async {
+    final db = await database;
+    await db.update(
+      'episodes',
+      {'finished_at': DateTime.now().millisecondsSinceEpoch},
+      where: 'podcast_id = ? AND audio_url = ?',
+      whereArgs: [podcastId, audioUrl],
+    );
+  }
+
+  Future<void> markEpisodeUnfinished(int podcastId, String audioUrl) async {
+    final db = await database;
+    await db.update(
+      'episodes',
+      {'finished_at': null},
+      where: 'podcast_id = ? AND audio_url = ?',
+      whereArgs: [podcastId, audioUrl],
+    );
+  }
+
+  Future<void> updateEpisodeProgressAndCheckCompletion(int podcastId, String audioUrl, int progressSeconds, int? totalDurationSeconds) async {
+    final db = await database;
+
+    // If near the end (95% or more), mark as finished
+    bool shouldMarkFinished = false;
+    if (totalDurationSeconds != null && totalDurationSeconds > 0) {
+      final progressPercent = progressSeconds / totalDurationSeconds;
+      shouldMarkFinished = progressPercent >= 0.95;
+    }
+
+    if (shouldMarkFinished) {
+      await db.update(
+        'episodes',
+        {
+          'progress_seconds': progressSeconds,
+          'finished_at': DateTime.now().millisecondsSinceEpoch,
+        },
+        where: 'podcast_id = ? AND audio_url = ?',
+        whereArgs: [podcastId, audioUrl],
+      );
+    } else {
+      await db.update(
+        'episodes',
+        {'progress_seconds': progressSeconds},
+        where: 'podcast_id = ? AND audio_url = ?',
+        whereArgs: [podcastId, audioUrl],
+      );
+    }
   }
 
   Future<void> close() async {
