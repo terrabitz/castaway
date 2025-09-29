@@ -419,20 +419,32 @@ class EpisodeTile extends StatelessWidget {
                 episode.formattedDate,
                 style: Theme.of(
                   context,
-                ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+                ).textTheme.bodySmall?.copyWith(
+                  color: episode.isFinished
+                      ? Colors.grey.shade400
+                      : Colors.grey.shade600,
+                ),
               ),
               if (episode.formattedDuration.isNotEmpty) ...[
                 Text(
                   ' • ',
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+                  ).textTheme.bodySmall?.copyWith(
+                    color: episode.isFinished
+                        ? Colors.grey.shade400
+                        : Colors.grey.shade600,
+                  ),
                 ),
                 Text(
                   episode.formattedDuration,
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+                  ).textTheme.bodySmall?.copyWith(
+                    color: episode.isFinished
+                        ? Colors.grey.shade400
+                        : Colors.grey.shade600,
+                  ),
                 ),
               ],
             ],
@@ -440,7 +452,11 @@ class EpisodeTile extends StatelessWidget {
           SizedBox(height: 4),
           Text(
             episode.title,
-            style: Theme.of(context).textTheme.bodyLarge,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: episode.isFinished
+                  ? Colors.grey.shade500
+                  : null,
+            ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
